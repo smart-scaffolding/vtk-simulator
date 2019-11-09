@@ -16,12 +16,27 @@ class VtkPipeline:
         self.iren = vtk.vtkRenderWindowInteractor()
         self.iren.SetRenderWindow(self.ren_win)
         self.iren.SetInteractorStyle(vtk.vtkInteractorStyleTrackballCamera())
+
+        # xyzLabels = ['X', 'Y', 'Z']
+        # scale = [1.0, 1.0, 1.0]
+        # axes = MakeAxesActor(scale, xyzLabels)
+        #
+        # om2 = vtk.vtkOrientationMarkerWidget()
+        # om2.SetOrientationMarker(axes)
+        # # Position lower right in the viewport.
+        # om2.SetViewport(0.8, 0, 1.0, 0.2)
+        # om2.SetInteractor(self.iren)
+        # om2.EnabledOn()
+        # om2.InteractiveOn()
+
+
         self.actor_list = []
         self.mapper_list = []
         self.source_list = []
         self.screenshot_count = 0
         self.timer_rate = timer_rate
         self.gif_data = []
+
         if gif_file is not None:
             try:
                 assert type(gif_file) is str
@@ -40,7 +55,9 @@ class VtkPipeline:
         for each in self.actor_list:
             self.ren.AddActor(each)
         self.ren.ResetCamera()
+        self.set_camera()
         self.ren_win.Render()
+        self.ren_win.SetWindowName('Robot Simulation')
         if ui:
             self.iren.Initialize()
             self.iren.Start()
@@ -50,12 +67,23 @@ class VtkPipeline:
 
     def set_camera(self):
         cam = self.ren.GetActiveCamera()
-        cam.Roll(-90)
-        cam.Elevation(-90)
-        cam.Zoom(0.6)
+        # cam.Roll(90)
+
+        # cam.SetFocalPoint(0, 0, 0)
+        # cam.Pitch(90)
+
+
+
+        # cam.SetViewUp(1, 1, 0)
+        # cam.Yaw(-90)
+        # cam.Elevation(-90)
+        # cam.Zoom(0.6)
+        # cam.SetPosition(-1, -3, 1.3)
+        self.ren.SetActiveCamera(cam)
 
     def animate(self):
         self.ren.ResetCamera()
+        # self.set
         self.ren_win.Render()
         self.iren.Initialize()
         self.iren.CreateRepeatingTimer(math.floor(1000 / self.timer_rate))  # Timer creates 60 fps
@@ -185,11 +213,117 @@ def axesCubeFloor(ren, x_bound=np.matrix([[-1.5, 1.5]]),
                   z_bound=np.matrix([[-1.5, 1.5]]),
                   position=np.matrix([[0, -1.5, 0]])):
     axes = axesCube(ren, x_bound=x_bound, y_bound=y_bound, z_bound=z_bound)
-    flr = floor()
-    flr.RotateX(90)
-    flr.SetPosition(position[0, 0], position[0, 1], position[0, 2])
-    flr.SetScale(3)
+    # flr = floor()
+    # flr.RotateX(90)
+    # flr.SetPosition(position[0, 0], position[0, 1], position[0, 2])
+    # flr.SetScale(3)
     assembly = vtk.vtkAssembly()
-    assembly.AddPart(flr)
+    # assembly.AddPart(flr)
     assembly.AddPart(axes)
     return assembly
+
+def cubeForPath(point):
+    colors = vtk.vtkNamedColors()
+    prop_assembly = vtk.vtkPropAssembly()
+
+    direction = point[3]
+    cube_source = vtk.vtkCubeSource()
+    cube_source.SetCenter((point[0] + 0.5, point[1] + 0.5, point[2] + 0.5))
+    cube_source.Update()
+    face_colors = vtk.vtkUnsignedCharArray()
+    face_colors.SetNumberOfComponents(3)
+
+    if direction == "top":
+
+        face_x_plus = colors.GetColor3ub('Red')
+        face_x_minus = colors.GetColor3ub('Red')
+        face_y_plus = colors.GetColor3ub('Red')
+        face_y_minus = colors.GetColor3ub('Red')
+        face_z_plus = colors.GetColor3ub('Cyan')
+        face_z_minus = colors.GetColor3ub('Red')
+
+    if direction == "bottom":
+
+        face_x_plus = colors.GetColor3ub('Red')
+        face_x_minus = colors.GetColor3ub('Red')
+        face_y_plus = colors.GetColor3ub('Red')
+        face_y_minus = colors.GetColor3ub('Red')
+        face_z_plus = colors.GetColor3ub('Red')
+        face_z_minus = colors.GetColor3ub('Cyan')
+
+    if direction == "right":
+
+        face_x_plus = colors.GetColor3ub('Cyan')
+        face_x_minus = colors.GetColor3ub('Red')
+        face_y_plus = colors.GetColor3ub('Red')
+        face_y_minus = colors.GetColor3ub('Red')
+        face_z_plus = colors.GetColor3ub('Red')
+        face_z_minus = colors.GetColor3ub('Red')
+
+    if direction == "left":
+
+        face_x_plus = colors.GetColor3ub('Red')
+        face_x_minus = colors.GetColor3ub('Cyan')
+        face_y_plus = colors.GetColor3ub('Red')
+        face_y_minus = colors.GetColor3ub('Red')
+        face_z_plus = colors.GetColor3ub('Red')
+        face_z_minus = colors.GetColor3ub('Red')
+
+    if direction == "front":
+
+        face_x_plus = colors.GetColor3ub('Red')
+        face_x_minus = colors.GetColor3ub('Red')
+        face_y_plus = colors.GetColor3ub('Red')
+        face_y_minus = colors.GetColor3ub('Cyan')
+        face_z_plus = colors.GetColor3ub('Red')
+        face_z_minus = colors.GetColor3ub('Red')
+
+    if direction == "back":
+
+        face_x_plus = colors.GetColor3ub('Red')
+        face_x_minus = colors.GetColor3ub('Red')
+        face_y_plus = colors.GetColor3ub('Cyan')
+        face_y_minus = colors.GetColor3ub('Red')
+        face_z_plus = colors.GetColor3ub('Red')
+        face_z_minus = colors.GetColor3ub('Red')
+
+    face_colors.InsertNextTypedTuple(face_x_minus)
+    face_colors.InsertNextTypedTuple(face_x_plus)
+    face_colors.InsertNextTypedTuple(face_y_minus)
+    face_colors.InsertNextTypedTuple(face_y_plus)
+    face_colors.InsertNextTypedTuple(face_z_minus)
+    face_colors.InsertNextTypedTuple(face_z_plus)
+
+    cube_source.GetOutput().GetCellData().SetScalars(face_colors)
+    cube_source.Update()
+
+    cube_mapper = vtk.vtkPolyDataMapper()
+    cube_mapper.SetInputData(cube_source.GetOutput())
+    cube_mapper.Update()
+
+    cube_actor = vtk.vtkActor()
+    cube_actor.SetMapper(cube_mapper)
+
+    # Assemble the colored cube and annotated cube texts into a composite prop.
+    prop_assembly = vtk.vtkPropAssembly()
+    prop_assembly.AddPart(cube_actor)
+    return prop_assembly
+
+def MakeAxesActor(scale, xyzLabels):
+    axes = vtk.vtkAxesActor()
+    axes.SetScale(scale[0], scale[1], scale[2])
+    axes.SetShaftTypeToCylinder()
+    axes.SetXAxisLabelText(xyzLabels[0])
+    axes.SetYAxisLabelText(xyzLabels[1])
+    axes.SetZAxisLabelText(xyzLabels[2])
+    axes.SetCylinderRadius(0.5 * axes.GetCylinderRadius())
+    axes.SetConeRadius(1.025 * axes.GetConeRadius())
+    axes.SetSphereRadius(1.5 * axes.GetSphereRadius())
+    tprop = axes.GetXAxisCaptionActor2D().GetCaptionTextProperty()
+    tprop.ItalicOn()
+    tprop.ShadowOn()
+    tprop.SetFontFamilyToTimes()
+    # Use the same text properties on the other two axes.
+    axes.GetYAxisCaptionActor2D().GetCaptionTextProperty().ShallowCopy(tprop)
+    axes.GetZAxisCaptionActor2D().GetCaptionTextProperty().ShallowCopy(tprop)
+    return axes

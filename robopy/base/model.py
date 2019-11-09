@@ -42,29 +42,29 @@ class Puma560(SerialLink):
         super().__init__(links=links, base=base, name='puma_560', stl_files=file_names, colors=colors, param=param)
 
 class Puma560_TEST(SerialLink):
-    def __init__(self, base=None):
+    def __init__(self, base=None, blueprint=None):
 
         # self.qn = np.matrix([[0, pi / 4, pi, 0, pi / 4, 0]])
         # self.qr = np.matrix([[0, pi / 2, -pi / 2, 0, 0, 0]])
         # self.qz = np.matrix([[0, 0, 0, 0, 0, 0]])
         # self.qs = np.matrix([[0, 0, -pi / 2, 0, 0, 0]])
-        self.scale = 1
+        self.scale = 0.1
         param = {
-            "cube_axes_x_bounds": np.matrix([[0, 1.5]]),
-            "cube_axes_y_bounds": np.matrix([[0, 1.5]]),
-            "cube_axes_z_bounds": np.matrix([[0, 1.5]]),
+            "cube_axes_x_bounds": np.matrix([[0, len(blueprint)]]),
+            "cube_axes_y_bounds": np.matrix([[0, len(blueprint[0])]]),
+            "cube_axes_z_bounds": np.matrix([[0, len(blueprint[0][0])]]),
             "floor_position": np.matrix([[0, 0, 0]])
         }
 
 #4.125 inches
 #6.429 inches
 
-        seg_lens = np.array([10.4775, 16.32966, 16.32966, 10.4775])
+        seg_lens = np.array([1.04775, 1.632966, 1.632966, 1.04775])
 
-        links = [Revolute(d=seg_lens[0], a=0, alpha=pi/2, j=0, theta=0, offset=0, qlim=(0, 0)),
-                 Revolute(d=0, a=seg_lens[1], alpha=0, j=0, theta=0, offset=0, qlim=(0, 0)),
-                 Revolute(d=0, a=seg_lens[2], alpha=0, j=0, theta=0, offset=0, qlim=(-180 * pi / 180, 180 * pi / 180)),
-                 Revolute(d=0, a=seg_lens[3], alpha=0, j=0, theta=0, offset=0, qlim=(-180 * pi / 180, 180 * pi / 180)),
+        links = [Revolute(d=seg_lens[0], a=0, alpha=pi/2, j=0, theta=0, offset=0, qlim=(0, 0), length=seg_lens[0]),
+                 Revolute(d=0, a=seg_lens[1], alpha=0, j=0, theta=0, offset=0, qlim=(0, 0), length=seg_lens[1]),
+                 Revolute(d=0, a=seg_lens[2], alpha=0, j=0, theta=0, offset=0, qlim=(-180 * pi / 180, 180 * pi / 180), length=seg_lens[2]),
+                 Revolute(d=0, a=seg_lens[3], alpha=0, j=0, theta=0, offset=0, qlim=(-180 * pi / 180, 180 * pi / 180), length=seg_lens[3]),
                  ]
 
         if base is None:
@@ -72,9 +72,11 @@ class Puma560_TEST(SerialLink):
         else:
             assert ishomog(base, (4, 4))
         file_names = SerialLink._setup_file_names(4)
-        colors = graphics.vtk_named_colors(["Red", "DarkGreen", "Blue", "Cyan"])
+        # colors = graphics.vtk_named_colors(["Red", "DarkGreen", "Blue", "Cyan"])
+        colors = graphics.vtk_named_colors(["Blue", "Blue", "Blue", "Blue"])
 
-        super().__init__(links=links, base=base, name='puma_560_TEST', stl_files=file_names, colors=colors, param=param)
+
+        super().__init__(links=links, base=base, name='puma_560_TEST', stl_files=file_names, colors=colors, param=param, blueprint=blueprint)
 
 
 class Orion5(SerialLink):
