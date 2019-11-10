@@ -85,7 +85,7 @@ def main():
     # ik_two_step = np.concatenate((ik_test, ik_test_2))
 
 
-    # robot.animate(stances=ik_test, frame_rate=30, unit='deg', num_steps=num_steps)
+    robot.animate(stances=ik_test, frame_rate=30, unit='deg', num_steps=num_steps * 2)
     # robot.plot(stance=f[-1], unit='deg')
 
 

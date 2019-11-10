@@ -79,6 +79,8 @@ class SerialLink:
         else:
             self.blueprint = blueprint
 
+        # self.scale = .13
+
     def __iter__(self):
         return (each for each in self.links)
 
@@ -102,7 +104,7 @@ class SerialLink:
             q = q * 180 / pi
         return q
 
-    def update_angles(self, new_angles, save=False):
+    def update_angles(self, new_angles, save=False, unit='deg'):
         """Updates all the link's angles
 
         :param new_angles: 1xN vector of new link angles
@@ -113,7 +115,10 @@ class SerialLink:
 
         :rtype: None
         """
+
         for link, new_theta in zip(self.links, new_angles):
+            if unit == 'rad':
+                new_theta = new_theta * np.pi / 180
             link.set_theta(new_theta)
         # self.update_link_positions()
 
@@ -311,18 +316,6 @@ class SerialLink:
         #     actor_list[self.length-1].SetUserMatrix(transforms.np2vtk(t))
         return t
 
-    def cos(self, A, B):
-        """ comment cos between vectors or matrices """
-        Aflat = A.reshape(-1)  # views
-        Bflat = np.transpose(B.reshape(-1))
-        return (np.dot(Aflat, Bflat) / max(np.linalg.norm(Aflat) * np.linalg.norm(Bflat), 1e-10))
-
-    def py_ang(self, v1, v2):
-        """ Returns the angle in radians between vectors 'v1' and 'v2'    """
-        cosang = np.dot(v1, v2)
-        sinang = np.linalg.norm(np.cross(v1, v2))
-        return np.arctan2(sinang, cosang)
-
     def ikineConstrained(self, p, num_iterations=1000, alpha=0.1, prior_q=None, vertical=False):
         """Computes the inverse kinematics to find the correct joint
         configuration to reach a given point
@@ -373,37 +366,9 @@ class SerialLink:
             delta_q = np.squeeze(np.asarray(delta_q))
             q = q + (alpha * delta_q.flatten())
 
-            ee_rot = get_rotation_from_homogeneous_transform(self.end_effector_position(q, transform=True, num_links=3))
-            print(ee_rot)
-            z_axis = get_rotation_from_homogeneous_transform(self.base)
-
-            # print(z_axis)
-
-            print("Trace: {}".format(np.trace(ee_rot)))
-            # trace = np.dot(np.transpose(ee_rot), np.eye(3))
-            # print(trace)
-            # print(R.from_dcm(ee_rot).as_euler('zxy', degrees=True)/2)
-            angle_between = np.arccos((np.trace(ee_rot)-1)/2)
-            print("Angle Between: {}".format(angle_between * 180 / np.pi))
-            print("EE Pos {}".format(self.end_effector_position(q, num_links=3)))
-            vector_angle =self.py_ang(self.end_effector_position(q, num_links=3), p)
-            print("Vector Angle: {}".format(vector_angle*180/np.pi))
-            print("Rotation Vector: {}".format(R.from_dcm(ee_rot).as_rotvec()))
-            vector_angle = self.py_ang(R.from_dcm(ee_rot).as_rotvec(), np.array([0, 0, -1]))-0.25
-            print("Vector Angle Rotation: {}".format(vector_angle * 180 / np.pi))
-            # absolute = q[1] + q[2]
-            # print("Absolute: {}".format(absolute))
-            # angle_dif =
-            # print("Angle Dif: {}".format(angle_dif*180/pi))
             q[-1] = q[1] - np.pi/2
-            # q[-1] = -1*(angle_between)
-            # q[-1] = -1*vector_angle
-            # q[-1] = q[-1] + -1 * (R.from_dcm(ee_rot).as_euler('zxy', degrees=False)/2)[1]
 
-
-
-
-            if abs(np.linalg.norm(err)) <= 1e-1:
+            if abs(np.linalg.norm(err)) <= 1e-3:
 
                 absolute = np.absolute(q[1])+ (pi - np.absolute(q[2]))
                 q[-1] = -1*(1.57-(9.4248 - absolute - 2 * pi))
@@ -413,22 +378,7 @@ class SerialLink:
                 return q
         raise ValueError("Could not find solution.")
 
-    def rotationMatrixToEulerAngles(self, R):
 
-        sy = math.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
-
-        singular = sy < 1e-6
-
-        if not singular:
-            x = math.atan2(R[2, 1], R[2, 2])
-            y = math.atan2(-R[2, 0], sy)
-            z = math.atan2(R[1, 0], R[0, 0])
-        else:
-            x = math.atan2(-R[1, 2], R[1, 1])
-            y = math.atan2(-R[2, 0], sy)
-            z = 0
-
-        return np.array([x, y, z])
     def jacob0(self, q=None):
         """Calculates the jacobian in the world frame by finding it in
         the tool frame and then converting to the world frame.
@@ -620,7 +570,26 @@ class SerialLink:
                         self.pipeline.add_actor(actor_list)
         return reader_list, actor_list, mapper_list
 
-    def _display_path(self, path=[(0, 0, 0, "top"), (1, 0, 0, "back"), (2, 0, 0, "bottom"),(3, 0, 0, "right")]):
+    def _add_block(self, position):
+        reader_list = vtk.vtkSTLReader()
+        loc = pkg_resources.resource_filename("robopy", '/'.join(('media', self.name, "block.stl")))
+        # print(loc)
+        reader_list.SetFileName(loc)
+        mapper_list = vtk.vtkPolyDataMapper()
+        mapper_list.SetInputConnection(reader_list.GetOutputPort())
+        actor_list = vtk.vtkActor()
+        actor_list.SetMapper(mapper_list)
+        color = vtk_named_colors(["Purple"])
+
+        actor_list.GetProperty().SetColor(color[0])  # (R,G,B)
+        actor_list.SetScale(0.013)
+        actor_list.SetPosition(position)
+        print("Adding block at pos: {}".format(position))
+        self.pipeline.add_actor(actor_list)
+
+        return actor_list, reader_list, mapper_list
+
+    def _display_path(self, path=[(0, 0, 0, "top"), (1, 0, 0, "top"), (2, 0, 0, "top"),(3, 0, 0, "top"), (4, 0, 0, "top"),(5, 0, 0, "top"),]):
         for point in path:
                 prop_assembly = cubeForPath(point)
                 self.pipeline.add_actor(prop_assembly)
@@ -633,7 +602,7 @@ class SerialLink:
 
         return file_names
 
-    def animate(self, stances, unit='rad', frame_rate=25, gif=None, num_steps=None):
+    def animate(self, stances, unit='rad', frame_rate=25, gif=None, num_steps=None, display_path=True, obstacles=None):
         """
         Animates SerialLink object over nx6 dimensional input matrix, with each row representing list of 6 joint angles.
         :param stances: nx6 dimensional input matrix.
@@ -663,11 +632,20 @@ class SerialLink:
 
 
         def execute(obj, event):
-            nonlocal stances
+            nonlocal stances, obstacles
             self.pipeline.timer_tick()
             self.fkine(stances, apply_stance=True, actor_list=self.pipeline.actor_list, timer=self.pipeline.timer_count, num_steps=num_steps)
             self.update_angles(stances[self.pipeline.timer_count].tolist()[0])
 
+            if obstacles is not None:
+                print("Obstacles is not none")
+                for i in obstacles:
+                    print(i)
+                    print(self.pipeline.timer_count)
+                    if i[0] == self.pipeline.timer_count:
+                        print("Adding actor")
+                        self._add_block(i[1])
+                        self.pipeline.animate()
             # print(self.get_current_joint_config(unit='deg'))
             # print(self.end_effector_position())
             self.pipeline.iren = obj
@@ -677,7 +655,8 @@ class SerialLink:
 
         self.pipeline.iren.AddObserver('TimerEvent', execute)
         self.__setup_structure_display()
-        self.pipeline.add_actor(self._display_path())
+        if display_path:
+            self.pipeline.add_actor(self._display_path())
 
         xyzLabels = ['X', 'Y', 'Z']
         scale = [1.0, 1.0, 1.0]
