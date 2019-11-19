@@ -104,7 +104,7 @@ class SerialLink:
             q = q * 180 / pi
         return q
 
-    def update_angles(self, new_angles, save=False, unit='deg'):
+    def update_angles(self, new_angles, save=False, unit='rad'):
         """Updates all the link's angles
 
         :param new_angles: 1xN vector of new link angles
@@ -119,7 +119,7 @@ class SerialLink:
         ##THIS EXPECTS EVERYTHING TO BE IN DEGREES
         ##SETS LINK ANGLES TO RADIANS
         for link, new_theta in zip(self.links, new_angles):
-            if unit == 'rad':
+            if unit == 'deg':
                 new_theta = new_theta * np.pi / 180
             link.set_theta(new_theta)
         # self.update_link_positions()

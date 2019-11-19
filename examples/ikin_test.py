@@ -57,7 +57,7 @@ def move_to_point(point, robot, num_steps, previous_angles=None, flip_angles=Fal
     ik_test = np.concatenate((forward_1, forward_2, forward_3, forward_4), axis=1)
     # if flip_angles:
     #     ik_test = np.concatenate((forward_1, forward_4, forward_3, forward_2), axis=1)
-    robot.update_angles(ik_test[-1].flatten().tolist()[0], unit="rad")
+    robot.update_angles(ik_test[-1].flatten().tolist()[0], unit="deg")
     return ik_test
 
 def follow_path(robot, num_steps, offset):
@@ -104,7 +104,7 @@ def follow_path(robot, num_steps, offset):
 
 
             robot.base = new_base
-            robot.update_angles(initial_angles, unit="rad")
+            robot.update_angles(initial_angles, unit="deg")
             # angles = robot.get_current_joint_config()
             # # # if flipped:
             # temp = angles[1]
