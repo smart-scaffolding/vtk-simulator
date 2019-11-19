@@ -116,6 +116,8 @@ class SerialLink:
         :rtype: None
         """
 
+        ##THIS EXPECTS EVERYTHING TO BE IN DEGREES
+        ##SETS LINK ANGLES TO RADIANS
         for link, new_theta in zip(self.links, new_angles):
             if unit == 'rad':
                 new_theta = new_theta * np.pi / 180
@@ -248,6 +250,8 @@ class SerialLink:
         :param timer: internal use only (for animation).
         :return: homogeneous transformation matrix.
         """
+
+        flipped=False
         if type(stance) is np.ndarray:
             stance = np.asmatrix(stance)
         if unit == 'deg':
@@ -259,9 +263,10 @@ class SerialLink:
             ee_pos = self.end_effector_position()
             if (timer / num_steps) % 2 == 0:
                 new_base = tr.trotz(0, unit="deg", xyz=ee_pos.tolist()[0])
+                flipped=False
             else:
                 new_base = tr.trotz(180, unit="deg", xyz=ee_pos.tolist()[0])
-
+                flipped=True
             print("EE_POS: {}".format(ee_pos))
             # new_base = new_base + tr.trotz(-90, unit='deg')
 
@@ -270,7 +275,23 @@ class SerialLink:
             t = self.links[0].transform_matrix
         else:
             t = self.base
-            t = t * self.links[0].A(stance[timer, 0])
+
+            angles = stance[timer, 0]
+            # if flipped:
+            #     temp = angles[1]
+            #     angles[1] = angles[3]
+            #     angles[3] = temp
+            # if flipped:
+            #     angles = np.flip(angles)
+            # if flipped:
+            #     temp = angles[1]
+            #     angles[1] = np.absolute(np.pi / 2 + angles[3])
+            #     angles[3] = -1 * np.absolute((np.pi / 2 - temp))
+            # if flipped:
+            #     temp = angles[1]
+            #     angles[1] = np.pi / 2 + angles[3]
+            #     angles[3] = temp - np.pi / 2
+            t = t * self.links[0].A(angles)
         # actor_list[0].SetOrigin(t[0:3, 3])
         if apply_stance:
             actor_list[0].SetUserMatrix(transforms.np2vtk(t))
@@ -282,7 +303,23 @@ class SerialLink:
             if stance is None:
                 t = t * self.links[i].transform_matrix
             else:
-                t = t * self.links[i].A(stance[timer, i])
+                angles = stance[timer, i]
+                # if flipped:
+                #     temp = angles[1]
+                #     angles[1] = angles[3]
+                #     angles[3] = temp
+
+                # if flipped:
+                #     angles = np.flip(angles)
+                # if flipped:
+                #     temp = angles[1]
+                #     angles[1] = np.pi/2 - angles[3]
+                #     angles[3] = np.pi/2 - temp
+                # if flipped:
+                #     temp = angles[1]
+                #     angles[1] = np.pi / 2 + angles[3]
+                #     angles[3] = temp - np.pi / 2
+                t = t * self.links[i].A(angles)
             if apply_stance:
                 # print(actor_list[i])
 
@@ -316,7 +353,7 @@ class SerialLink:
         #     actor_list[self.length-1].SetUserMatrix(transforms.np2vtk(t))
         return t
 
-    def ikineConstrained(self, p, num_iterations=1000, alpha=0.1, prior_q=None, vertical=False):
+    def ikineConstrained(self, p, num_iterations=1000, alpha=0.1, prior_q=None, vertical=False, flipped=False):
         """Computes the inverse kinematics to find the correct joint
         configuration to reach a given point
 
@@ -337,10 +374,13 @@ class SerialLink:
         if not (0.0 <= alpha <= 1.0):
             print("Invalid alpha. Defaulting to 0.1")
             alpha = 0.1
-
-        q = self.get_current_joint_config()
-
-
+        # q = self.get_current_joint_config()
+        q = self.get_current_joint_config()*np.pi/180
+        print("\t\tCURRENT JOINT CONFIG: {}".format(q))
+        # if flipped:
+        #     temp = q[1]
+        #     q[1] = np.pi/2 - q[3]
+        #     q[3] = np.pi/2 - temp
         pTarget = np.copy(p)
         # TODO fix the hardcoded value
         pTarget[2] = pTarget[2] + 1.04775
@@ -368,13 +408,14 @@ class SerialLink:
 
             q[-1] = q[1] - np.pi/2
 
-            if abs(np.linalg.norm(err)) <= 1e-3:
+            if abs(np.linalg.norm(err)) <= 1e-1:
 
                 absolute = np.absolute(q[1])+ (pi - np.absolute(q[2]))
                 q[-1] = -1*(1.57-(9.4248 - absolute - 2 * pi))
-                print("Absolute: {}".format(absolute))
-                print("Absolute Degrees: {}".format(absolute * 180 / pi))
-                print("Angle Dif: {}".format(q[-1] * 180 / pi))
+                # print("Absolute: {}".format(absolute))
+                # print("Absolute Degrees: {}".format(absolute * 180 / pi))
+                # print("Angle Dif: {}".format(q[-1] * 180 / pi))
+
                 return q
         raise ValueError("Could not find solution.")
 
