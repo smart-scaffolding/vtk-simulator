@@ -261,11 +261,14 @@ class SerialLink:
         if num_steps > 0 and timer % num_steps == 0:
             # if timer - num_steps == 0:
             ee_pos = self.end_effector_position()
+            ee_pos = ee_pos.tolist()[0]
+            ee_pos[0] = math.floor(ee_pos[0]) + 0.5
+            ee_pos[2] = round(ee_pos[2])
             if (timer / num_steps) % 2 == 0:
-                new_base = tr.trotz(0, unit="deg", xyz=ee_pos.tolist()[0])
+                new_base = tr.trotz(0, unit="deg", xyz=ee_pos)
                 flipped=False
             else:
-                new_base = tr.trotz(180, unit="deg", xyz=ee_pos.tolist()[0])
+                new_base = tr.trotz(180, unit="deg", xyz=ee_pos)
                 flipped=True
             print("EE_POS: {}".format(ee_pos))
             # new_base = new_base + tr.trotz(-90, unit='deg')
@@ -377,6 +380,7 @@ class SerialLink:
         q = self.get_current_joint_config()
         # q = self.get_current_joint_config()*np.pi/180
         print("\t\tCURRENT JOINT CONFIG: {}".format(q))
+        print("\t\tGOING TO POINT IK: {}".format(p))
         if flipped:
             temp = q[1]
             q[1] = np.pi/2 + q[3]
@@ -389,6 +393,7 @@ class SerialLink:
         for i in range(num_iterations):
             # Calculate position error of the end effector
             curr = self.fkine(q, num_links=self.length-1)
+            # print("Current EE Pos: {}".format(curr[0:3, 3]))
             # self.update_angles(q)
 
             err = goal - curr
@@ -521,8 +526,8 @@ class SerialLink:
 
         self.update_angles(stance.tolist()[0])
 
-        print(self.get_current_joint_config(unit='deg'))
-        print(self.end_effector_position())
+        # print(self.get_current_joint_config(unit='deg'))
+        # print(self.end_effector_position())
 
         # for i in self.links:
         #     i.display(unit='deg')

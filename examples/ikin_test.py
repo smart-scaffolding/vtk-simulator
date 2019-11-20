@@ -1,6 +1,7 @@
 import robopy.base.model as model
 import numpy as np
 import robopy.base.transforms as tr
+import math
 
 def main():
     blueprint = np.array([
@@ -33,7 +34,7 @@ def main():
     num_steps = 10
 
 
-    ik_motion = follow_path(robot, num_steps, offset=0.1)
+    ik_motion = follow_path(robot, num_steps, offset=0.5)
 
     robot = model.Puma560_TEST(base=np.matrix([[1, 0, 0, 0.5],
                                                [0, 1, 0, 1.5],
@@ -43,9 +44,9 @@ def main():
     robot.animate(stances=ik_motion, frame_rate=30, unit='deg', num_steps=num_steps * 3, display_path=False, obstacles=[[num_steps*9, (5, 0, 0)], [num_steps*15, (6, 0, 0)]])
 
 def move_to_point(point, robot, num_steps, previous_angles=None, flip_angles=False):
-    print(point)
+    # print(point)
     ik_angles = robot.ikineConstrained(point, flipped=flip_angles) * 180 / np.pi ## converted to degrees
-    print(ik_angles)
+    # print(ik_angles)
 
     if previous_angles is None:
         previous_angles = [1] * robot.length
@@ -72,7 +73,7 @@ def follow_path(robot, num_steps, offset):
     for index, point in enumerate(path):
         # move_ee_up = robot.end_effector_position().flatten().tolist()[0]
         move_ee_up = np.copy(path[index-1])
-        print(move_ee_up)
+        # print(move_ee_up)
         # TODO: FIX TO ACCEPT ANY ORIENTATION, NOT JUST +Z
         move_ee_up[2] = float(move_ee_up[2]) + offset
 
@@ -91,14 +92,17 @@ def follow_path(robot, num_steps, offset):
         else:
             ee_pos = robot.end_effector_position()
             initial_angles = previous_angles_3[-1].flatten().tolist()[0]
+            ee_pos = ee_pos.tolist()[0]
+            ee_pos[0] = math.floor(ee_pos[0]) + 0.5
+            ee_pos[2] = round(ee_pos[2])
             if (index) % 2 == 0:
-                new_base = tr.trotz(0, unit="deg", xyz=ee_pos.tolist()[0])
+                new_base = tr.trotz(0, unit="deg", xyz=ee_pos)
                 temp = initial_angles[1]
                 initial_angles[1] = 180 / 2 + initial_angles[3]
                 initial_angles[3] = temp - 180 / 2
                 flip_angles = False
             else:
-                new_base = tr.trotz(180, unit="deg", xyz=ee_pos.tolist()[0])
+                new_base = tr.trotz(180, unit="deg", xyz=ee_pos)
                 temp = initial_angles[1]
                 initial_angles[1] = 180 / 2 + initial_angles[3]
                 initial_angles[3] = temp - 180 / 2
@@ -123,8 +127,13 @@ def follow_path(robot, num_steps, offset):
 
             print("Initial Angles: {}".format(initial_angles))
             ee_pos = robot.end_effector_position(np.asarray(initial_angles) * np.pi/180)
+
+
             # ee_pos = robot.end_effector_position()
             ee_up = np.copy(ee_pos).tolist()[0]
+            ee_up[0] = math.floor(ee_up[0]) + 0.5
+            ee_up[2] = round(ee_up[2])
+            print("\t\t\tGoing to point: {}\t EE Pos: {}\tRounded Pos: {}".format(point, ee_pos, ee_up))
             # TODO: FIX TO ACCEPT ANY ORIENTATION, NOT JUST +Z
             ee_up[2] = ee_up[2] + offset
 
