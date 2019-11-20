@@ -30,19 +30,21 @@ def main():
                                               [0, 0, 1, 1],
                                               [0, 0, 0, 1]]), blueprint=blueprint)
 
-    num_steps = 30
+    num_steps = 10
 
 
-    ik_motion = follow_path(robot, num_steps, offset=0.5)
+    ik_motion = follow_path(robot, num_steps, offset=0.1)
+
     robot = model.Puma560_TEST(base=np.matrix([[1, 0, 0, 0.5],
                                                [0, 1, 0, 1.5],
                                                [0, 0, 1, 1],
                                                [0, 0, 0, 1]]), blueprint=blueprint)
+
     robot.animate(stances=ik_motion, frame_rate=30, unit='deg', num_steps=num_steps * 3, display_path=False, obstacles=[[num_steps*9, (5, 0, 0)], [num_steps*15, (6, 0, 0)]])
 
 def move_to_point(point, robot, num_steps, previous_angles=None, flip_angles=False):
     print(point)
-    ik_angles = robot.ikineConstrained(point, flipped=flip_angles) * 180 / np.pi
+    ik_angles = robot.ikineConstrained(point, flipped=flip_angles) * 180 / np.pi ## converted to degrees
     print(ik_angles)
 
     if previous_angles is None:
@@ -63,8 +65,8 @@ def move_to_point(point, robot, num_steps, previous_angles=None, flip_angles=Fal
 def follow_path(robot, num_steps, offset):
     # path = [(3.5, 0.5, 1), (2.5, 0.5, 1), (3.5, 0.5, 1), (2.5, 0.5, 1), (3.5, 0.5, 1), (2.5, 0.5, 1), (3.5, 0.5, 1), (2.5, 0.5, 1)]
     # path = [(3.5, 1.5, 1), (1.5, 0.5, 1),(4.5, 0.5, 1), (2.5, 0.5, 1),(5.5, 0.5, 1), (3.5, 0.5, 1),(6.5, 0.5, 1), (4.5, 0.5, 1) ]
-    path = [(3.5, 1.5, 1), (1.5, 1.5, 1), (4.5, 1.5, 1), (2.5, 1.5, 1),(5.5, 1.5, 2),(4.5, 1.5, 1),(6.5, 1.5, 3),(5.5, 1.5, 2)]
-    #         (5.5, 0.5, 2)]
+    path = [(3.5, 1.5, 1), (1.5, 1.5, 1), (4.5, 1.5, 1), (2.5, 1.5, 1),(5.5, 1.5, 2),(4.5, 1.5, 1),(6.5, 1.5, 3),(5.5, 1.5, 2),
+            (7.5, 1.5, 4),(6.5, 1.5, 3)]
 
     save_path = None
     for index, point in enumerate(path):
@@ -94,12 +96,13 @@ def follow_path(robot, num_steps, offset):
                 temp = initial_angles[1]
                 initial_angles[1] = 180 / 2 + initial_angles[3]
                 initial_angles[3] = temp - 180 / 2
-
+                flip_angles = False
             else:
                 new_base = tr.trotz(180, unit="deg", xyz=ee_pos.tolist()[0])
                 temp = initial_angles[1]
                 initial_angles[1] = 180 / 2 + initial_angles[3]
                 initial_angles[3] = temp - 180 / 2
+                flip_angles = True
 
 
 
@@ -125,15 +128,14 @@ def follow_path(robot, num_steps, offset):
             # TODO: FIX TO ACCEPT ANY ORIENTATION, NOT JUST +Z
             ee_up[2] = ee_up[2] + offset
 
-
-            previous_angles_1 = move_to_point(ee_up, robot, num_steps, initial_angles, flip_angles=False)
+            previous_angles_1 = move_to_point(ee_up, robot, num_steps, initial_angles, flip_angles=flip_angles)
 
             stop_above = np.copy(point)
             # TODO: FIX TO ACCEPT ANY ORIENTATION, NOT JUST +Z
             stop_above[2] = stop_above[2] + offset
-            previous_angles_2 = move_to_point(stop_above, robot, num_steps, previous_angles_1[-1].flatten().tolist()[0], flip_angles=False)
+            previous_angles_2 = move_to_point(stop_above, robot, num_steps, previous_angles_1[-1].flatten().tolist()[0], flip_angles=flip_angles)
 
-            previous_angles_3 = move_to_point(point, robot, num_steps, previous_angles_2[-1].flatten().tolist()[0], flip_angles=False)
+            previous_angles_3 = move_to_point(point, robot, num_steps, previous_angles_2[-1].flatten().tolist()[0], flip_angles=flip_angles)
             # robot.update_angles(previous_angles_3[-1].flatten().tolist()[0], unit="rad")
         save_path = update_path(save_path, previous_angles_1, previous_angles_2, previous_angles_3)
 

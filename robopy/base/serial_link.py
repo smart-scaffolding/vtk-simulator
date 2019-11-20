@@ -374,13 +374,13 @@ class SerialLink:
         if not (0.0 <= alpha <= 1.0):
             print("Invalid alpha. Defaulting to 0.1")
             alpha = 0.1
-        # q = self.get_current_joint_config()
-        q = self.get_current_joint_config()*np.pi/180
+        q = self.get_current_joint_config()
+        # q = self.get_current_joint_config()*np.pi/180
         print("\t\tCURRENT JOINT CONFIG: {}".format(q))
-        # if flipped:
-        #     temp = q[1]
-        #     q[1] = np.pi/2 - q[3]
-        #     q[3] = np.pi/2 - temp
+        if flipped:
+            temp = q[1]
+            q[1] = np.pi/2 + q[3]
+            q[3] = temp - np.pi/2
         pTarget = np.copy(p)
         # TODO fix the hardcoded value
         pTarget[2] = pTarget[2] + 1.04775
@@ -511,7 +511,7 @@ class SerialLink:
         assert type(stance) is np.matrix
 
         if unit == 'deg':
-            stance = stance * (pi / 180)
+            stance = stance * np.pi / 180
 
         self.pipeline = VtkPipeline()
         self.pipeline.reader_list, self.pipeline.actor_list, self.pipeline.mapper_list = self.__setup_pipeline_objs()
@@ -652,7 +652,7 @@ class SerialLink:
         :return: null
         """
         if unit == 'deg':
-            stances = stances * (pi / 180)
+            stances = stances * np.pi / 180
 
         self.pipeline = VtkPipeline(total_time_steps=stances.shape[0] - 1, gif_file=gif)
         self.pipeline.reader_list, self.pipeline.actor_list, self.pipeline.mapper_list = self.__setup_pipeline_objs()
