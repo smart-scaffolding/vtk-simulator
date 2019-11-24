@@ -35,17 +35,18 @@ def main():
     num_steps = 10
 
     startFace = BlockFace(3, 1, 0, 'top')
-    endFace = BlockFace(7, 2, 3, 'top')
+    endFace = BlockFace(7, 1, 3, 'top')
 
 
-    ik_motion = follow_path(robot, num_steps, offset=0.5, startFace=startFace, endFace=endFace, blueprint=blueprint)
+    ik_motion, path = follow_path(robot, num_steps, offset=0.5, startFace=startFace, endFace=endFace, blueprint=blueprint)
+
 
     robot = model.Puma560_TEST(base=np.matrix([[1, 0, 0, 0.5],
                                                [0, 1, 0, 1.5],
                                                [0, 0, 1, 1],
                                                [0, 0, 0, 1]]), blueprint=blueprint)
 
-    robot.animate(stances=ik_motion, frame_rate=30, unit='deg', num_steps=num_steps * 3, display_path=False, obstacles=[[num_steps*9, (5, 0, 0)], [num_steps*15, (6, 0, 0)]])
+    robot.animate(stances=ik_motion, frame_rate=30, unit='deg', num_steps=num_steps * 3, display_path=False, obstacles=[[num_steps*9, (5, 0, 0)], [num_steps*15, (6, 0, 0)]], path=path)
 
 def move_to_point(point, robot, num_steps, previous_angles=None, flip_angles=False):
     # print(point)
@@ -80,6 +81,10 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint):
 
     faceStarPlanner = FaceStar(startFace, endFace, blueprint, armReach)
     path = faceStarPlanner.get_path()
+
+    global_path = []
+    global_path.append((num_steps, path))
+
     filtered_path = []
     for index, point in enumerate(path):
         filtered_path.append(point)
@@ -114,6 +119,7 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint):
 
 
 
+
         else:
             ee_pos = robot.end_effector_position()
             initial_angles = previous_angles_3[-1].flatten().tolist()[0]
@@ -126,6 +132,8 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint):
                 initial_angles[1] = 180 / 2 + initial_angles[3]
                 initial_angles[3] = temp - 180 / 2
                 flip_angles = False
+
+                # global_path.append((num_steps * index, path[index:]))
             else:
                 new_base = tr.trotz(180, unit="deg", xyz=ee_pos)
                 temp = initial_angles[1]
@@ -166,7 +174,7 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint):
             # robot.update_angles(previous_angles_3[-1].flatten().tolist()[0], unit="rad")
         save_path = update_path(save_path, previous_angles_1, previous_angles_2, previous_angles_3)
 
-    return save_path
+    return save_path, global_path
 
 def update_path(save_path, new_motion_1, new_motion_2, new_motion_3):
     if save_path is None:

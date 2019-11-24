@@ -648,7 +648,7 @@ class SerialLink:
 
         return file_names
 
-    def animate(self, stances, unit='rad', frame_rate=25, gif=None, num_steps=None, display_path=True, obstacles=None):
+    def animate(self, stances, unit='rad', frame_rate=25, gif=None, num_steps=None, display_path=True, obstacles=None, path=None):
         """
         Animates SerialLink object over nx6 dimensional input matrix, with each row representing list of 6 joint angles.
         :param stances: nx6 dimensional input matrix.
@@ -692,6 +692,21 @@ class SerialLink:
                         print("Adding actor")
                         self._add_block(i[1])
                         self.pipeline.animate()
+
+            if path is not None:
+                print("Path is not none")
+                for i in path:
+                    print("Path Timer: {}".format(i))
+                    print(self.pipeline.timer_count)
+                    if i[0] == self.pipeline.timer_count:
+                        print("Adding path")
+                        for point in i[1]:
+                            self.pipeline.add_actor(cubeForPath(point))
+                        # self._add_block(i[1])
+                        self.pipeline.animate()
+
+            # self.pipeline.add_actor(cubeForPath((0, 0, 0, "top")))
+            # self.pipeline.animate()
             # print(self.get_current_joint_config(unit='deg'))
             # print(self.end_effector_position())
             self.pipeline.iren = obj

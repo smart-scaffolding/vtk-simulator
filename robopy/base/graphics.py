@@ -235,57 +235,57 @@ def cubeForPath(point):
 
     if direction == "top":
 
-        face_x_plus = colors.GetColor3ub('Red')
-        face_x_minus = colors.GetColor3ub('Red')
-        face_y_plus = colors.GetColor3ub('Red')
-        face_y_minus = colors.GetColor3ub('Red')
+        face_x_plus = colors.GetColor3ub('DarkGreen')
+        face_x_minus = colors.GetColor3ub('DarkGreen')
+        face_y_plus = colors.GetColor3ub('DarkGreen')
+        face_y_minus = colors.GetColor3ub('DarkGreen')
         face_z_plus = colors.GetColor3ub('Cyan')
-        face_z_minus = colors.GetColor3ub('Red')
+        face_z_minus = colors.GetColor3ub('DarkGreen')
 
     if direction == "bottom":
 
-        face_x_plus = colors.GetColor3ub('Red')
-        face_x_minus = colors.GetColor3ub('Red')
-        face_y_plus = colors.GetColor3ub('Red')
-        face_y_minus = colors.GetColor3ub('Red')
-        face_z_plus = colors.GetColor3ub('Red')
+        face_x_plus = colors.GetColor3ub('DarkGreen')
+        face_x_minus = colors.GetColor3ub('DarkGreen')
+        face_y_plus = colors.GetColor3ub('DarkGreen')
+        face_y_minus = colors.GetColor3ub('DarkGreen')
+        face_z_plus = colors.GetColor3ub('DarkGreen')
         face_z_minus = colors.GetColor3ub('Cyan')
 
     if direction == "right":
 
         face_x_plus = colors.GetColor3ub('Cyan')
-        face_x_minus = colors.GetColor3ub('Red')
-        face_y_plus = colors.GetColor3ub('Red')
-        face_y_minus = colors.GetColor3ub('Red')
-        face_z_plus = colors.GetColor3ub('Red')
-        face_z_minus = colors.GetColor3ub('Red')
+        face_x_minus = colors.GetColor3ub('DarkGreen')
+        face_y_plus = colors.GetColor3ub('DarkGreen')
+        face_y_minus = colors.GetColor3ub('DarkGreen')
+        face_z_plus = colors.GetColor3ub('DarkGreen')
+        face_z_minus = colors.GetColor3ub('DarkGreen')
 
     if direction == "left":
 
-        face_x_plus = colors.GetColor3ub('Red')
+        face_x_plus = colors.GetColor3ub('DarkGreen')
         face_x_minus = colors.GetColor3ub('Cyan')
-        face_y_plus = colors.GetColor3ub('Red')
-        face_y_minus = colors.GetColor3ub('Red')
-        face_z_plus = colors.GetColor3ub('Red')
-        face_z_minus = colors.GetColor3ub('Red')
+        face_y_plus = colors.GetColor3ub('DarkGreen')
+        face_y_minus = colors.GetColor3ub('DarkGreen')
+        face_z_plus = colors.GetColor3ub('DarkGreen')
+        face_z_minus = colors.GetColor3ub('DarkGreen')
 
     if direction == "front":
 
-        face_x_plus = colors.GetColor3ub('Red')
-        face_x_minus = colors.GetColor3ub('Red')
-        face_y_plus = colors.GetColor3ub('Red')
+        face_x_plus = colors.GetColor3ub('DarkGreen')
+        face_x_minus = colors.GetColor3ub('DarkGreen')
+        face_y_plus = colors.GetColor3ub('DarkGreen')
         face_y_minus = colors.GetColor3ub('Cyan')
-        face_z_plus = colors.GetColor3ub('Red')
-        face_z_minus = colors.GetColor3ub('Red')
+        face_z_plus = colors.GetColor3ub('DarkGreen')
+        face_z_minus = colors.GetColor3ub('DarkGreen')
 
     if direction == "back":
 
-        face_x_plus = colors.GetColor3ub('Red')
-        face_x_minus = colors.GetColor3ub('Red')
+        face_x_plus = colors.GetColor3ub('DarkGreen')
+        face_x_minus = colors.GetColor3ub('DarkGreen')
         face_y_plus = colors.GetColor3ub('Cyan')
-        face_y_minus = colors.GetColor3ub('Red')
-        face_z_plus = colors.GetColor3ub('Red')
-        face_z_minus = colors.GetColor3ub('Red')
+        face_y_minus = colors.GetColor3ub('DarkGreen')
+        face_z_plus = colors.GetColor3ub('DarkGreen')
+        face_z_minus = colors.GetColor3ub('DarkGreen')
 
     face_colors.InsertNextTypedTuple(face_x_minus)
     face_colors.InsertNextTypedTuple(face_x_plus)
