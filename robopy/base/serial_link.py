@@ -79,7 +79,7 @@ class SerialLink:
         else:
             self.blueprint = blueprint
 
-        # self.scale = .13
+        self.scale = .13
 
     def __iter__(self):
         return (each for each in self.links)
@@ -406,7 +406,7 @@ class SerialLink:
             q[3] = temp - np.pi/2
         pTarget = np.copy(p)
         # TODO fix the hardcoded value
-        pTarget[2] = pTarget[2] + 1.04775
+        pTarget[2] = pTarget[2] + (1.04775*1.3)
 
         goal = create_homogeneous_transform_from_point(pTarget)
         for i in range(num_iterations):
@@ -432,7 +432,7 @@ class SerialLink:
 
             q[-1] = q[1] - np.pi/2
 
-            if abs(np.linalg.norm(err)) <= 1e-1:
+            if abs(np.linalg.norm(err)) <= 1e-7:
 
                 absolute = np.absolute(q[1])+ (pi - np.absolute(q[2]))
                 q[-1] = -1*(1.57-(9.4248 - absolute - 2 * pi))

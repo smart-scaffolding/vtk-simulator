@@ -48,7 +48,7 @@ class Puma560_TEST(SerialLink):
         # self.qr = np.matrix([[0, pi / 2, -pi / 2, 0, 0, 0]])
         # self.qz = np.matrix([[0, 0, 0, 0, 0, 0]])
         # self.qs = np.matrix([[0, 0, -pi / 2, 0, 0, 0]])
-        self.scale = 0.1
+        # self.scale = 0.1
         param = {
             "cube_axes_x_bounds": np.matrix([[0, len(blueprint)]]),
             "cube_axes_y_bounds": np.matrix([[0, len(blueprint[0])]]),
@@ -59,7 +59,7 @@ class Puma560_TEST(SerialLink):
 #4.125 inches
 #6.429 inches
 
-        seg_lens = np.array([1.04775, 1.632966, 1.632966, 1.04775])
+        seg_lens = np.array([1.04775, 1.632966, 1.632966, 1.04775])*1.3
 
         links = [Revolute(d=seg_lens[0], a=0, alpha=pi/2, j=0, theta=0, offset=0, qlim=(0, 0), length=seg_lens[0]),
                  Revolute(d=0, a=seg_lens[1], alpha=0, j=0, theta=0, offset=0, qlim=(0, 0), length=seg_lens[1]),

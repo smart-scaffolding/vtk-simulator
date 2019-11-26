@@ -27,20 +27,24 @@ def main():
         [[1, 0, 0, 0], [1, 1, 1, 1], [1, 1, 1, 1]],
     ])
 
+    # robot = model.Puma560_TEST(base=np.matrix([[1, 0, 0, 0.5],
+    #                                           [0, 1, 0, 1.5],
+    #                                           [0, 0, 1, 1],
+    #                                           [0, 0, 0, 1]]), blueprint=blueprint)
     robot = model.Puma560_TEST(base=np.matrix([[1, 0, 0, 0.5],
-                                              [0, 1, 0, 1.5],
-                                              [0, 0, 1, 1],
-                                              [0, 0, 0, 1]]), blueprint=blueprint)
+                                               [0, 1, 0, 1.5],
+                                               [0, 0, 1, 1],
+                                               [0, 0, 0, 1]]), blueprint=blueprint)
 
     num_steps = 10
 
     startFace = BlockFace(2, 1, 0, 'top')
-    endFace = BlockFace(7, 1, 3, 'top')
-    # endFace = BlockFace(5, 2, 3, 'top')
+    endFace = BlockFace(7, 2, 3, 'top')
+    # endFace = BlockFace(6, 1, 2, 'top')
     # endFace = BlockFace(7, 0, 0, 'top')
 
-
-    ik_motion, path, directions = follow_path(robot, num_steps, offset=0.5, startFace=startFace, endFace=endFace, blueprint=blueprint)
+    # (2, 1, 0, 'top'), (3, 1, 0, 'top'), (4, 1, 0, 'top'), (5, 1, 1, 'top'), (6, 1, 2, 'top'), (6, 2, 3, 'top')]
+    ik_motion, path, directions = follow_path(robot, num_steps, offset=1.5, startFace=startFace, endFace=endFace, blueprint=blueprint)
 
 
     robot = model.Puma560_TEST(base=np.matrix([[1, 0, 0, 0.5],
@@ -79,17 +83,18 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint):
     # path = [(3.49, 1.49, 1), (1.49, 1.49, 1), (4.49, 1.49, 1), (2.49, 1.49, 1),(5.49, 1.49, 2),(4.5, 1.5, 1),(6.5, 1.5, 3),(5.5, 1.5, 2),
     #         (7.49, 1.49, 4),(6.5, 1.5, 3),(7.5, 2.5, 4), (7.5, 1.5, 4), (6.5, 2.5, 4), (7.5, 2.5, 4), (5.5, 2.5, 4),(6.5, 2.5, 4)]
 
-    # path = [(3.49, 2.49, 1, "top"), (1.49, 2.49, 1, "top"), (4.49, 2.49, 1, "top"), (2.49, 2.49, 1, "top"),(4, 2.49, 2.5, "left")]
+    # path = [(3.49, 2.49, 1.3, "top"), (1.49, 2.49, 1.3, "top"), (4.49, 2.49, 1.3, "top"), (2.49, 2.49, 1.3, "top"),(3.7, 2.49, 3, "left")]
     # armReach = [2.38, 1.58]
 
+    # armReach = [1.5, 1.5]
 
-    armReach = [1.5, 1.5]
+    armReach = [2.5, 1.5]
 
 
 
     faceStarPlanner = FaceStar(startFace, endFace, blueprint, armReach)
     path = faceStarPlanner.get_path()
-
+    #
     global_path = []
     global_path.append((num_steps, path))
 
@@ -100,6 +105,9 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint):
             filtered_path.append((1, 1, 0, "top"))
         else:
             filtered_path.append(path[index-1])
+
+    # filtered_path.append((6, 2, 3, "top"))
+    # filtered_path.append((6, 1, 2, "top"))
 
     path = filtered_path
 
@@ -243,6 +251,10 @@ def add_offset(ee_pos, direction, offset):
     return ee_pos
 
 def flip_base(ee_pos, direction, value):
+    # ee_pos = np.copy(ee_pos).tolist()[0]
+    ee_pos[0] = math.floor(ee_pos[0]) + 0.5
+    ee_pos[2] = round(ee_pos[2])
+
     if direction == "top" or direction =="bottom":
         new_base = tr.trotz(value, unit="deg", xyz=ee_pos)
 
