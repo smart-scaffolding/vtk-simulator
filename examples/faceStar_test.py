@@ -3,7 +3,8 @@ import numpy as np
 import robopy.base.transforms as tr
 import math
 from robopy.base.FaceStar import *
-
+from robopy.base.common import create_point_from_homogeneous_transform
+import time
 def main():
     blueprint = np.array([
         [[1, 0, 0], [1, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [1, 1, 1]],
@@ -17,8 +18,6 @@ def main():
     ])
 
     blueprint = np.array([
-        [[1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]],
-        [[1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]],
         [[1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]],
         [[1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]],
         [[1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]],
@@ -38,13 +37,13 @@ def main():
 
     num_steps = 10
 
-    startFace = BlockFace(2, 1, 0, 'top')
-    endFace = BlockFace(7, 2, 3, 'top')
-    # endFace = BlockFace(6, 1, 2, 'top')
-    # endFace = BlockFace(7, 0, 0, 'top')
+    startFace = BlockFace(1, 1, 0, 'top')
+    endFace = BlockFace(5, 1, 3, 'top')
+    # endFace = BlockFace(4, 1, 2, 'top')
+    # endFace = BlockFace(5, 0, 0, 'top')
 
     # (2, 1, 0, 'top'), (3, 1, 0, 'top'), (4, 1, 0, 'top'), (5, 1, 1, 'top'), (6, 1, 2, 'top'), (6, 2, 3, 'top')]
-    ik_motion, path, directions = follow_path(robot, num_steps, offset=1.5, startFace=startFace, endFace=endFace, blueprint=blueprint)
+    ik_motion, path, directions = follow_path(robot, num_steps, offset=0.5, startFace=startFace, endFace=endFace, blueprint=blueprint)
 
 
     robot = model.Puma560_TEST(base=np.matrix([[1, 0, 0, 0.5],
@@ -56,8 +55,24 @@ def main():
 
 def move_to_point(direction, point, robot, num_steps, previous_angles=None, flip_angles=False):
     # print(point)
-    ik_angles = robot.ikineConstrained(direction, point, flipped=flip_angles) * 180 / np.pi ## converted to degrees
-    # print(ik_angles)
+    try:
+        ik_angles = robot.ikineConstrained(direction, point, flipped=flip_angles) * 180 / np.pi ## converted to degrees
+        # print(ik_angles)
+
+    except ValueError as e:
+        print("\n\n")
+        print("\t\t" + "*"*50)
+        print("\t\tUNABLE TO REACH POINT")
+        print("\t\t" + "*"*50)
+        print("\t\tRobot Base: {}".format(np.transpose(create_point_from_homogeneous_transform(robot.base))))
+        print("\t\tRobot EE Pos: {}".format(robot.end_effector_position()))
+        print("\t\tRobot Angles: {}".format(robot.get_current_joint_config(unit="deg")))
+        print("\t\tGoing to Point: {} \t Face: {}".format(point, direction))
+        print("\t\t" + "*"*50)
+        print("\n\n")
+        time.sleep(0.1)
+        raise e
+
 
     if previous_angles is None:
         previous_angles = [1] * robot.length
@@ -88,7 +103,7 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint):
 
     # armReach = [1.5, 1.5]
 
-    armReach = [2.5, 1.5]
+    armReach = [1.5, 1.5]
 
 
 
@@ -102,7 +117,7 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint):
     for index, point in enumerate(path):
         filtered_path.append(point)
         if index == 0:
-            filtered_path.append((1, 1, 0, "top"))
+            filtered_path.append((0, 1, 0, "top"))
         else:
             filtered_path.append(path[index-1])
 
