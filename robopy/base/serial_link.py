@@ -261,10 +261,8 @@ class SerialLink:
             timer = 0
         if num_steps > 0 and timer % num_steps == 0:
             # if timer - num_steps == 0:
-            ee_pos = self.end_effector_position()
-            ee_pos = ee_pos.tolist()[0]
-            ee_pos[0] = math.floor(ee_pos[0]) + 0.5
-            ee_pos[2] = round(ee_pos[2])
+            ee_pos = round_end_effector_position(self.end_effector_position().tolist()[0], "top")
+
 
             index = (timer/num_steps)
             if index % 2 == 0:
@@ -278,8 +276,29 @@ class SerialLink:
                 # #             break
                 # #         else:
                 # #             new_base = tr.trotz(0, unit="deg", xyz=ee_pos)
+                if int(index) == 4:
+                    new_base = flip_base(ee_pos, "left", -90)
+                    #
+                    new_pos = create_point_from_homogeneous_transform(new_base)
+                    #
+                    new_base = new_base * flip_base(ee_pos, "left", 0)
+                    # #
 
-                new_base = self.flip_base(ee_pos, orientation[int(index)], 0)
+                    new_base = new_base * flip_base(ee_pos, "top", 0)
+                    new_base[0:3, 3] = new_pos
+                    self.base = new_base
+
+                    # ee_pos = self.end_effector_position()
+                    # ee_pos = ee_pos.tolist()[0]
+                    # ee_pos[0] = math.floor(ee_pos[0])+1
+                    # ee_pos[2] = round(ee_pos[2])-0.5
+                    # new_base = self.flip_base(ee_pos, "left", 0)
+
+                    self.base = new_base
+
+                else:
+                    new_base = flip_base(ee_pos, orientation[int(index)], 0)
+
                 flipped=False
             else:
                 # new_base = tr.trotz(180, unit="deg", xyz=ee_pos)
@@ -294,7 +313,7 @@ class SerialLink:
                 #             new_base = tr.trotz(180, unit="deg", xyz=ee_pos)
                 if int(index) == 3:
                     # new_base = self.flip_base(ee_pos, orientation[int(index)], 270)
-                    new_base = self.flip_base(ee_pos, "left", -90)
+                    new_base = flip_base(ee_pos, "left", -90)
 
                     new_pos = create_point_from_homogeneous_transform(new_base)
                     # self.base=new_base
@@ -303,31 +322,23 @@ class SerialLink:
                     # ee_pos = ee_pos.tolist()[0]
                     # ee_pos[0] = math.floor(ee_pos[0])
                     # ee_pos[2] = round(ee_pos[2])
-                    new_base = new_base * self.flip_base(ee_pos, "top", 180)
+                    ee_pos[0] = ee_pos[0] + 0.5
+                    new_base = new_base * flip_base(ee_pos, "top", 180)
                     #
                     new_base[0:3,3] = new_pos
+                    new_base[0, 3] = new_base[0, 3] + 0.5
+                    new_base[2, 3] = new_base[2, 3] - 0.5
                     self.base = new_base
 
                     # new_base = self.flip_base(ee_pos, "left", 90)
                     self.base = new_base
 
-                    # ee_pos = self.end_effector_position()
-                    # ee_pos = ee_pos.tolist()[0]
-                    # ee_pos[0] = math.floor(ee_pos[0]) + 1
-                    # ee_pos[2] = round(ee_pos[2]) - 0.5
-                    # new_base = self.flip_base(create_point_from_homogeneous_transform(self.base), "top", -90)
-                    # self.base = self.base * new_base
-                    # ee_pos = self.end_effector_position()
-                    # ee_pos = ee_pos.tolist()[0]
-                    # ee_pos[0] = math.floor(ee_pos[0])
-                    # ee_pos[2] = round(ee_pos[2])
-                    # # new_base = self.flip_base(ee_pos, "top", 180)
-                    #
-                    # new_base = new_base * tr.troty(180, unit="deg", xyz=ee_pos)
 
+                # elif int(index) == 4:
+                #     new_base = self.base * self.flip_base(ee_pos, "left", 180)
 
                 else:
-                    new_base = self.flip_base(ee_pos, orientation[int(index)], 180)
+                    new_base = flip_base(ee_pos, orientation[int(index)], 180)
                 flipped=True
             print("EE_POS: {}".format(ee_pos))
             # new_base = new_base + tr.trotz(-90, unit='deg')
@@ -767,17 +778,23 @@ class SerialLink:
     # def get_end_effector_pos(self, stance):
     #     return self.fkine(stance)
 
-    def flip_base(self, ee_pos, direction, value):
-        print("FLIP BASE DIRECTION: {}".format(direction))
-        if direction == "top" or direction == "bottom":
-            new_base = tr.trotz(value, unit="deg", xyz=ee_pos)
-
-        if direction == "left" or direction == "right":
-            new_base = tr.troty(value, unit="deg", xyz=ee_pos)
-
-        if direction == "front" or direction == "back":
-            new_base = tr.trotx(value, unit="deg", xyz=ee_pos)
-        return new_base
+    # def flip_base(self, ee_pos, direction, value):
+    #     # ee_pos[0] = math.floor(ee_pos[0])
+    #     # ee_pos[2] = round(ee_pos[2])
+    #
+    #     if direction == "top" or direction == "bottom":
+    #         # ee_pos[0] = ee_pos[0] + 0.5
+    #         new_base = tr.trotz(value, unit="deg", xyz=ee_pos)
+    #
+    #     if direction == "left" or direction == "right":
+    #         # ee_pos[0] = ee_pos[0] + 0.5
+    #         # ee_pos[2] = ee_pos[2]
+    #         new_base = tr.troty(value, unit="deg", xyz=ee_pos)
+    #
+    #     if direction == "front" or direction == "back":
+    #         new_base = tr.trotx(value, unit="deg", xyz=ee_pos)
+    #
+    #     return new_base
 
 class Link(ABC):
     """

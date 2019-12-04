@@ -5,7 +5,8 @@
 import numpy as np
 from . import check_args
 import numpy.testing as npt
-
+import math
+import robopy.base.transforms as tr
 
 def ishomog(tr, dim, rtest=''):
     """ISHOMOG Test if SE(3) homogeneous transformation matrix.
@@ -128,3 +129,43 @@ def create_point_from_homogeneous_transform(T):
     :rtype: np.ndarray
     """
     return T[0:3, 3]
+
+
+def round_end_effector_position(ee_pos, direction, offset=None):
+
+
+    if direction == "top" or direction == "bottom":
+        ee_pos[0] = math.floor(ee_pos[0]) + 0.5
+        ee_pos[2] = round(ee_pos[2])
+
+
+    if direction == "left" or direction == "right":
+        ee_pos[0] = math.ceil(ee_pos[0]) - 0.5
+
+        ee_pos[2] = round(ee_pos[2])
+
+    if direction == "front" or direction == "back":
+        ee_pos[0] = math.floor(ee_pos[0])
+        ee_pos[2] = round(ee_pos[2])
+        ee_pos[0] = ee_pos[0] + 0.5
+
+    return ee_pos
+
+def flip_base(ee_pos, direction, value):
+    # ee_pos = np.copy(ee_pos).tolist()[0]
+    # ee_pos[0] = math.floor(ee_pos[0])
+    # ee_pos[2] = round(ee_pos[2])
+
+    if direction == "top" or direction =="bottom":
+        # ee_pos[0] = ee_pos[0] + 0.5
+        new_base = tr.trotz(value, unit="deg", xyz=ee_pos)
+
+    if direction =="left" or direction=="right":
+        # ee_pos[0] = ee_pos[0] + 0.5
+        # ee_pos[2] = ee_pos[2]
+        new_base = tr.troty(value, unit="deg", xyz=ee_pos)
+
+    if direction =="front" or direction=="back":
+        new_base = tr.trotx(value, unit="deg", xyz=ee_pos)
+
+    return new_base
