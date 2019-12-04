@@ -74,7 +74,7 @@ class Puma560_TEST(SerialLink):
             assert ishomog(base, (4, 4))
         file_names = SerialLink._setup_file_names(4)
         # colors = graphics.vtk_named_colors(["Red", "DarkGreen", "Blue", "Cyan"])
-        colors = graphics.vtk_named_colors(["Blue", "Blue", "Blue", "Blue"])
+        colors = graphics.vtk_named_colors(["Red", "Blue", "Blue", "Purple"])
 
 
         super().__init__(links=links, base=base, name='puma_560_TEST', stl_files=file_names, colors=colors, param=param, blueprint=blueprint)

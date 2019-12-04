@@ -240,7 +240,7 @@ class SerialLink:
         # return len(self.links)
         return 4
 
-    def fkine(self, stance, unit='rad', apply_stance=False, actor_list=None, timer=None, num_steps=0, num_links=4, directions=None):
+    def fkine(self, stance, unit='rad', apply_stance=False, actor_list=None, timer=None, num_steps=0, num_links=4, directions=None, orientation=None):
         """
         Calculates forward kinematics for a list of joint angles.
         :param stance: stance is list of joint angles.
@@ -265,22 +265,26 @@ class SerialLink:
             ee_pos = ee_pos.tolist()[0]
             ee_pos[0] = math.floor(ee_pos[0]) + 0.5
             ee_pos[2] = round(ee_pos[2])
-            if (timer / num_steps) % 2 == 0:
-                if directions == None:
-                    new_base = tr.trotz(0, unit="deg", xyz=ee_pos)
-                # else:
-                #     for direction in directions:
-                #         if timer >= 50:
-                #             new_base = self.flip_base(ee_pos, "left", 90)
-                #             break
-                #         else:
-                #             new_base = tr.trotz(0, unit="deg", xyz=ee_pos)
 
+            index = (timer/num_steps)
+            if index % 2 == 0:
+                # if
+                # if directions == None:
+                #     new_base = tr.trotz(0, unit="deg", xyz=ee_pos)
+                # # else:
+                # #     for direction in directions:
+                # #         if timer >= 50:
+                # #             new_base = self.flip_base(ee_pos, "left", 90)
+                # #             break
+                # #         else:
+                # #             new_base = tr.trotz(0, unit="deg", xyz=ee_pos)
+
+                new_base = self.flip_base(ee_pos, orientation[int(index)], 0)
                 flipped=False
             else:
                 # new_base = tr.trotz(180, unit="deg", xyz=ee_pos)
-                if directions == None:
-                    new_base = tr.trotz(180, unit="deg", xyz=ee_pos)
+                # if directions == None:
+                #     new_base = tr.trotz(180, unit="deg", xyz=ee_pos)
                 # else:
                 #     for direction in directions:
                 #         if timer >= 50:
@@ -288,6 +292,42 @@ class SerialLink:
                 #             break
                 #         else:
                 #             new_base = tr.trotz(180, unit="deg", xyz=ee_pos)
+                if int(index) == 3:
+                    # new_base = self.flip_base(ee_pos, orientation[int(index)], 270)
+                    new_base = self.flip_base(ee_pos, "left", -90)
+
+                    new_pos = create_point_from_homogeneous_transform(new_base)
+                    # self.base=new_base
+
+                    # ee_pos = self.end_effector_position(new_base[0:3, 3])
+                    # ee_pos = ee_pos.tolist()[0]
+                    # ee_pos[0] = math.floor(ee_pos[0])
+                    # ee_pos[2] = round(ee_pos[2])
+                    new_base = new_base * self.flip_base(ee_pos, "top", 180)
+                    #
+                    new_base[0:3,3] = new_pos
+                    self.base = new_base
+
+                    # new_base = self.flip_base(ee_pos, "left", 90)
+                    self.base = new_base
+
+                    # ee_pos = self.end_effector_position()
+                    # ee_pos = ee_pos.tolist()[0]
+                    # ee_pos[0] = math.floor(ee_pos[0]) + 1
+                    # ee_pos[2] = round(ee_pos[2]) - 0.5
+                    # new_base = self.flip_base(create_point_from_homogeneous_transform(self.base), "top", -90)
+                    # self.base = self.base * new_base
+                    # ee_pos = self.end_effector_position()
+                    # ee_pos = ee_pos.tolist()[0]
+                    # ee_pos[0] = math.floor(ee_pos[0])
+                    # ee_pos[2] = round(ee_pos[2])
+                    # # new_base = self.flip_base(ee_pos, "top", 180)
+                    #
+                    # new_base = new_base * tr.troty(180, unit="deg", xyz=ee_pos)
+
+
+                else:
+                    new_base = self.flip_base(ee_pos, orientation[int(index)], 180)
                 flipped=True
             print("EE_POS: {}".format(ee_pos))
             # new_base = new_base + tr.trotz(-90, unit='deg')
@@ -299,22 +339,8 @@ class SerialLink:
             t = self.base
 
             angles = stance[timer, 0]
-            # if flipped:
-            #     temp = angles[1]
-            #     angles[1] = angles[3]
-            #     angles[3] = temp
-            # if flipped:
-            #     angles = np.flip(angles)
-            # if flipped:
-            #     temp = angles[1]
-            #     angles[1] = np.absolute(np.pi / 2 + angles[3])
-            #     angles[3] = -1 * np.absolute((np.pi / 2 - temp))
-            # if flipped:
-            #     temp = angles[1]
-            #     angles[1] = np.pi / 2 + angles[3]
-            #     angles[3] = temp - np.pi / 2
+
             t = t * self.links[0].A(angles)
-        # actor_list[0].SetOrigin(t[0:3, 3])
         if apply_stance:
             actor_list[0].SetUserMatrix(transforms.np2vtk(t))
             actor_list[0].SetScale(self.scale)
@@ -326,53 +352,16 @@ class SerialLink:
                 t = t * self.links[i].transform_matrix
             else:
                 angles = stance[timer, i]
-                # if flipped:
-                #     temp = angles[1]
-                #     angles[1] = angles[3]
-                #     angles[3] = temp
 
-                # if flipped:
-                #     angles = np.flip(angles)
-                # if flipped:
-                #     temp = angles[1]
-                #     angles[1] = np.pi/2 - angles[3]
-                #     angles[3] = np.pi/2 - temp
-                # if flipped:
-                #     temp = angles[1]
-                #     angles[1] = np.pi / 2 + angles[3]
-                #     angles[3] = temp - np.pi / 2
                 t = t * self.links[i].A(angles)
             if apply_stance:
-                # print(actor_list[i])
 
-
-                # x = actor_list[i + 1].GetUserMatrix().GetElement(0, 3)
-                # y = actor_list[i + 1].GetUserMatrix().GetElement(1, 3)
-                # z = actor_list[i + 1].GetUserMatrix().GetElement(2, 3)
-                # print(x, y, z)
-                # actor_list[i].SetOrigin([x, y, z])
-
-                # shift_pos = t * self.links[i+1].A(stance[timer, i+1])
-                # actor_list[i].SetOrigin(shift_pos[0:3, 3])
-
-                # actor_list[i].SetOrigin(t[0:3, 3])
                 actor_list[i].SetUserMatrix(transforms.np2vtk(t))
                 actor_list[i].SetScale(self.scale)
 
-                # actor_list[i].SetPosition(t[0:3, 3])
-                # actor_list[i].SetOrientation(t[0:3, 2])
-                # print("Position of part: {}".format(actor_list[i].GetPosition()))
-                # print("User Matrix: {}".format(actor_list[i].GetUserMatrix()))
-                # print("Matrix: {}".format(actor_list[i].GetMatrix()))
-            prev_t = t
-            # print("I TEST: {}".format(i))
-            # print("Link LengthsL {}".format(len(self.links)))
-            # print("Stance {}".format(stance))
 
         t = t * self.tool
-        # if apply_stance:
-        #     print("LENGTH: {}".format(self.length))
-        #     actor_list[self.length-1].SetUserMatrix(transforms.np2vtk(t))
+
         return t
 
     def ikineConstrained(self, direction, p, num_iterations=1000, alpha=0.1, prior_q=None, vertical=False, flipped=False):
@@ -430,7 +419,17 @@ class SerialLink:
             delta_q = np.squeeze(np.asarray(delta_q))
             q = q + (alpha * delta_q.flatten())
 
-            q[-1] = q[1] - np.pi/2
+            if direction == "top":
+                q[-1] = q[1] - np.pi/2
+            if direction == "bottom":
+                q[-1] = q[-1] + pi
+
+            if direction == "left" or direction == "front":
+                q[-1] = q[-1] - np.pi/2
+
+            if direction == "right" or direction == "back":
+                q[-1] = q[-1] - pi / 2
+
 
             if abs(np.linalg.norm(err)) <= 1e-1:
 
@@ -678,7 +677,7 @@ class SerialLink:
 
         return file_names
 
-    def animate(self, stances, unit='rad', frame_rate=25, gif=None, num_steps=None, display_path=True, obstacles=None, path=None, directions=None):
+    def animate(self, stances, unit='rad', frame_rate=25, gif=None, num_steps=None, display_path=True, obstacles=None, path=None, directions=None, orientation=None):
         """
         Animates SerialLink object over nx6 dimensional input matrix, with each row representing list of 6 joint angles.
         :param stances: nx6 dimensional input matrix.
@@ -712,7 +711,7 @@ class SerialLink:
         def execute(obj, event):
             nonlocal stances, obstacles
             self.pipeline.timer_tick()
-            self.fkine(stances, apply_stance=True, actor_list=self.pipeline.actor_list, timer=self.pipeline.timer_count, num_steps=num_steps, directions=None)
+            self.fkine(stances, apply_stance=True, actor_list=self.pipeline.actor_list, timer=self.pipeline.timer_count, num_steps=num_steps, directions=None, orientation=orientation)
             self.update_angles(stances[self.pipeline.timer_count].tolist()[0])
 
             if obstacles is not None:
@@ -769,6 +768,7 @@ class SerialLink:
     #     return self.fkine(stance)
 
     def flip_base(self, ee_pos, direction, value):
+        print("FLIP BASE DIRECTION: {}".format(direction))
         if direction == "top" or direction == "bottom":
             new_base = tr.trotz(value, unit="deg", xyz=ee_pos)
 
