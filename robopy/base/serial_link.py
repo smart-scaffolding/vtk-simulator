@@ -289,7 +289,7 @@ class SerialLink:
                     # new_base = new_base * flip_base(ee_pos, "top", 0)
 
                     new_base[0:3, 3] = new_pos
-                    new_base[0, 3] = new_base[0, 3] - 0.5
+                    new_base[0, 3] = new_base[0, 3] + 0.5
                     new_base[2, 3] = new_base[2, 3] + 0.5
                     self.base = new_base
 

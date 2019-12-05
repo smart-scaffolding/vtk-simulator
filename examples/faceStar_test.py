@@ -118,7 +118,7 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint):
     #         (7.49, 1.49, 4),(6.5, 1.5, 3),(7.5, 2.5, 4), (7.5, 1.5, 4), (6.5, 2.5, 4), (7.5, 2.5, 4), (5.5, 2.5, 4),(6.5, 2.5, 4)]
 
     # path = [(2.49, 2.49, 1.3, "top"), (0.49, 2.49, 1.3, "top"),(2, 2.49, 2.5, "left")]
-    path = [(1, 2, 0, "top"), (0, 2, 0, "top"), (3, 2, 3, "left"), (3, 2, 2, "left")  ]
+    path = [(1, 2, 0, "top"), (0, 2, 0, "top"), (3, 2, 3, "left"), (3, 2, 2, "left"), (3, 2, 5, "left")  ]
     # armReach = [2.38, 1.58]
 
     # armReach = [1.5, 1.5]
@@ -223,7 +223,7 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint):
                     # new_base = new_base * flip_base(ee_pos, "top", 180)
 
                     new_base[0:3, 3] = new_pos
-                    new_base[0, 3] = new_base[0, 3] - 0.5
+                    new_base[0, 3] = new_base[0, 3] + 0.5
                     new_base[2, 3] = new_base[2, 3] + 0.5
                     # ee_pos = robot.end_effector_position()
                     # ee_pos = ee_pos.tolist()[0]
@@ -247,8 +247,8 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint):
                     new_base = new_base * flip_base(ee_pos, "top", 0)
 
                     new_base[0:3, 3] = new_pos
-                    new_base[0, 3] = new_base[0, 3] - 0.5
-                    new_base[2, 3] = new_base[2, 3] - 0.5
+                    new_base[0, 3] = new_base[0, 3] + 0.5
+                    new_base[2, 3] = new_base[2, 3] + 0.5
                     # ee_pos = robot.end_effector_position()
                     # ee_pos = ee_pos.tolist()[0]
                     # ee_pos[0] = math.floor(ee_pos[0])+1
