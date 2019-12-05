@@ -79,7 +79,7 @@ class SerialLink:
         else:
             self.blueprint = blueprint
 
-        self.scale = .1
+        self.scale = .013
 
     def __iter__(self):
         return (each for each in self.links)
@@ -261,7 +261,7 @@ class SerialLink:
             timer = 0
         if num_steps > 0 and timer % num_steps == 0:
             # if timer - num_steps == 0:
-            ee_pos = round_end_effector_position(self.end_effector_position().tolist()[0], "top")
+            ee_pos = round_end_effector_position(self.end_effector_position().tolist()[0], "top", None)
 
 
             index = (timer/num_steps)
@@ -277,15 +277,20 @@ class SerialLink:
                 # #         else:
                 # #             new_base = tr.trotz(0, unit="deg", xyz=ee_pos)
                 if int(index) == 4:
+                    new_base = flip_base(ee_pos, "left", 0)
                     new_base = flip_base(ee_pos, "left", -90)
                     #
                     new_pos = create_point_from_homogeneous_transform(new_base)
                     #
-                    new_base = new_base * flip_base(ee_pos, "left", 0)
+                    # new_base = new_base * flip_base(ee_pos, "left", 0)
                     # #
 
-                    new_base = new_base * flip_base(ee_pos, "top", 0)
+                    # ee_pos[0] = ee_pos[0] + 0.5
+                    # new_base = new_base * flip_base(ee_pos, "top", 0)
+
                     new_base[0:3, 3] = new_pos
+                    new_base[0, 3] = new_base[0, 3] - 0.5
+                    new_base[2, 3] = new_base[2, 3] + 0.5
                     self.base = new_base
 
                     # ee_pos = self.end_effector_position()
@@ -295,12 +300,35 @@ class SerialLink:
                     # new_base = self.flip_base(ee_pos, "left", 0)
 
                     self.base = new_base
+                elif int(index) == 6:
+                    new_base = flip_base(ee_pos, orientation[int(index)], 0)
+                    new_base = flip_base(ee_pos, "left", -90)
+                    #
+                    new_pos = create_point_from_homogeneous_transform(new_base)
+                    #
+                    # new_base = new_base * flip_base(ee_pos, "left", 0)
+                    # #
+                    # ee_pos[0] = ee_pos[0] + 0.5
+                    new_base = new_base * flip_base(ee_pos, "top", 0)
 
+                    new_base[0:3, 3] = new_pos
+                    new_base[0, 3] = new_base[0, 3] - 0.5
+                    new_base[2, 3] = new_base[2, 3] - 0.5
+                    # ee_pos = robot.end_effector_position()
+                    # ee_pos = ee_pos.tolist()[0]
+                    # ee_pos[0] = math.floor(ee_pos[0])+1
+                    # ee_pos[2] = round(ee_pos[2])-0.5
+                    # new_base = flip_base(ee_pos, "left", 0)
+                    self.base = new_base
+                    # direction = "top"
+                    # previous_direction = "top"
+                    # print("ROBOT BASE: {}
                 else:
                     new_base = flip_base(ee_pos, orientation[int(index)], 0)
 
                 flipped=False
             else:
+                new_base = flip_base(ee_pos, orientation[int(index)], 180)
                 # new_base = tr.trotz(180, unit="deg", xyz=ee_pos)
                 # if directions == None:
                 #     new_base = tr.trotz(180, unit="deg", xyz=ee_pos)
@@ -322,23 +350,45 @@ class SerialLink:
                     # ee_pos = ee_pos.tolist()[0]
                     # ee_pos[0] = math.floor(ee_pos[0])
                     # ee_pos[2] = round(ee_pos[2])
-                    ee_pos[0] = ee_pos[0] + 0.5
+                    # ee_pos[0] = ee_pos[0] + 0.5
                     new_base = new_base * flip_base(ee_pos, "top", 180)
                     #
                     new_base[0:3,3] = new_pos
                     new_base[0, 3] = new_base[0, 3] + 0.5
-                    new_base[2, 3] = new_base[2, 3] - 0.5
+                    new_base[2, 3] = new_base[2, 3] + 0.5
                     self.base = new_base
 
                     # new_base = self.flip_base(ee_pos, "left", 90)
                     self.base = new_base
 
+                elif int(index) == 5:
+                    new_base = flip_base(ee_pos, "left", -90)
+                    #
+                    new_pos = create_point_from_homogeneous_transform(new_base)
+                    #
+                    # new_base = new_base * flip_base(ee_pos, "left", 0)
+                    # #
+                    # ee_pos[0] = ee_pos[0] + 0.5
+                    new_base = new_base * flip_base(ee_pos, "top", 180)
+
+                    new_base[0:3, 3] = new_pos
+                    new_base[0, 3] = new_base[0, 3] + 0.5
+                    new_base[2, 3] = new_base[2, 3]
+                    # ee_pos = robot.end_effector_position()
+                    # ee_pos = ee_pos.tolist()[0]
+                    # ee_pos[0] = math.floor(ee_pos[0])+1
+                    # ee_pos[2] = round(ee_pos[2])-0.5
+                    # new_base = flip_base(ee_pos, "left", 0)
+                    self.base = new_base
+                    # direction = "top"
+                    # previous_direction = "top"
+                    # print("ROBOT BASE: {} END_EFFECTOR_POS: {}".format(self.base, self.end_effector_position()))
 
                 # elif int(index) == 4:
                 #     new_base = self.base * self.flip_base(ee_pos, "left", 180)
 
-                else:
-                    new_base = flip_base(ee_pos, orientation[int(index)], 180)
+
+
                 flipped=True
             print("EE_POS: {}".format(ee_pos))
             # new_base = new_base + tr.trotz(-90, unit='deg')
@@ -400,13 +450,15 @@ class SerialLink:
         # q = self.get_current_joint_config()*np.pi/180
         print("\t\tCURRENT JOINT CONFIG: {}".format(q))
         print("\t\tGOING TO POINT IK: {}".format(p))
+        print("\t\tEE POS: {}".format(self.end_effector_position()))
+        print("\t\tDIRECTION: {}\n".format(direction))
         if flipped:
             temp = q[1]
             q[1] = np.pi/2 + q[3]
             q[3] = temp - np.pi/2
         pTarget = np.copy(p)
         # TODO fix the hardcoded value
-        pTarget[2] = pTarget[2] + (1.04775*1)
+        pTarget[2] = pTarget[2] + (1.04775*1.3)
 
         goal = create_homogeneous_transform_from_point(pTarget)
         for i in range(num_iterations):
@@ -442,7 +494,7 @@ class SerialLink:
                 q[-1] = q[-1] - pi / 2
 
 
-            if abs(np.linalg.norm(err)) <= 1e-1:
+            if abs(np.linalg.norm(err)) <= 1e-4:
 
                 absolute = np.absolute(q[1])+ (pi - np.absolute(q[2]))
                 q[-1] = -1*(1.57-(9.4248 - absolute - 2 * pi))
@@ -670,7 +722,7 @@ class SerialLink:
         actor_list.GetProperty().SetColor(color[0])  # (R,G,B)
         actor_list.SetScale(0.013)
         actor_list.SetPosition(position)
-        print("Adding block at pos: {}".format(position))
+        # print("Adding block at pos: {}".format(position))
         self.pipeline.add_actor(actor_list)
 
         return actor_list, reader_list, mapper_list
@@ -735,17 +787,17 @@ class SerialLink:
                         self._add_block(i[1])
                         self.pipeline.animate()
 
-            if path is not None:
-                print("Path is not none")
-                for i in path:
-                    print("Path Timer: {}".format(i))
-                    print(self.pipeline.timer_count)
-                    if i[0] == self.pipeline.timer_count:
-                        print("Adding path")
-                        for point in i[1]:
-                            self.pipeline.add_actor(cubeForPath(point))
-                        # self._add_block(i[1])
-                        self.pipeline.animate()
+            # if path is not None:
+            #     print("Path is not none")
+            #     for i in path:
+            #         print("Path Timer: {}".format(i))
+            #         print(self.pipeline.timer_count)
+            #         if i[0] == self.pipeline.timer_count:
+            #             print("Adding path")
+            #             for point in i[1]:
+            #                 self.pipeline.add_actor(cubeForPath(point))
+            #             # self._add_block(i[1])
+            #             self.pipeline.animate()
 
             # self.pipeline.add_actor(cubeForPath((0, 0, 0, "top")))
             # self.pipeline.animate()

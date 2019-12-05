@@ -59,7 +59,7 @@ class Puma560_TEST(SerialLink):
 #4.125 inches
 #6.429 inches
 
-        seg_lens = np.array([1.04775, 1.632966, 1.632966, 1.04775])*1.
+        seg_lens = np.array([1.04775, 1.632966, 1.632966, 1.04775])*1.3
         # seg_lens = np.array([1.375, 2.143, 1.375, 2.143])
 
         links = [Revolute(d=seg_lens[0], a=0, alpha=pi/2, j=0, theta=0, offset=0, qlim=(0, 0), length=seg_lens[0]),

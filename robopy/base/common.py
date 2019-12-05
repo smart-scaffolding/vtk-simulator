@@ -131,24 +131,46 @@ def create_point_from_homogeneous_transform(T):
     return T[0:3, 3]
 
 
-def round_end_effector_position(ee_pos, direction, offset=None):
+# def round_end_effector_position(ee_pos, direction, offset=None):
+#
+#
+#     if direction == "top" or direction == "bottom":
+#         ee_pos[0] = math.floor(ee_pos[0]) + 0.49
+#         ee_pos[2] = round(ee_pos[2])
+#
+#
+#     if direction == "left" or direction == "right":
+#         ee_pos[0] = math.floor(ee_pos[0]) + 0.49
+#
+#         ee_pos[2] = round(ee_pos[2])
+#
+#     if direction == "front" or direction == "back":
+#         ee_pos[0] = math.floor(ee_pos[0])
+#         ee_pos[2] = round(ee_pos[2])
+#         ee_pos[0] = ee_pos[0] + 0.49
+#
+#     return ee_pos
+
+def round_end_effector_position(ee_pos, direction, point, offset=None):
+    if point is None:
+        print("POINT IS NONE")
+        if direction == "top" or direction == "bottom":
+            ee_pos[0] = math.floor(ee_pos[0]) + 0.5
+            ee_pos[2] = round(ee_pos[2])
 
 
-    if direction == "top" or direction == "bottom":
-        ee_pos[0] = math.floor(ee_pos[0]) + 0.5
-        ee_pos[2] = round(ee_pos[2])
+        if direction == "left" or direction == "right":
+            ee_pos[0] = math.ceil(ee_pos[0]) - 0.5
 
+            ee_pos[2] = round(ee_pos[2])
 
-    if direction == "left" or direction == "right":
-        ee_pos[0] = math.ceil(ee_pos[0]) - 0.5
+        if direction == "front" or direction == "back":
+            ee_pos[0] = math.floor(ee_pos[0])
+            ee_pos[2] = round(ee_pos[2])
+            ee_pos[0] = ee_pos[0] + 0.5
+        return ee_pos
 
-        ee_pos[2] = round(ee_pos[2])
-
-    if direction == "front" or direction == "back":
-        ee_pos[0] = math.floor(ee_pos[0])
-        ee_pos[2] = round(ee_pos[2])
-        ee_pos[0] = ee_pos[0] + 0.5
-
+    ee_pos = np.copy(point)
     return ee_pos
 
 def flip_base(ee_pos, direction, value):
