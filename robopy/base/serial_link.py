@@ -276,55 +276,55 @@ class SerialLink:
                 # #             break
                 # #         else:
                 # #             new_base = tr.trotz(0, unit="deg", xyz=ee_pos)
-                if int(index) == 4:
-                    new_base = flip_base(ee_pos, "left", 0)
-                    new_base = flip_base(ee_pos, "left", -90)
-                    #
-                    new_pos = create_point_from_homogeneous_transform(new_base)
-                    #
-                    # new_base = new_base * flip_base(ee_pos, "left", 0)
-                    # #
-
-                    # ee_pos[0] = ee_pos[0] + 0.5
-                    # new_base = new_base * flip_base(ee_pos, "top", 0)
-
-                    new_base[0:3, 3] = new_pos
-                    new_base[0, 3] = new_base[0, 3] + 0.5
-                    new_base[2, 3] = new_base[2, 3] + 0.5
-                    self.base = new_base
-
-                    # ee_pos = self.end_effector_position()
-                    # ee_pos = ee_pos.tolist()[0]
-                    # ee_pos[0] = math.floor(ee_pos[0])+1
-                    # ee_pos[2] = round(ee_pos[2])-0.5
-                    # new_base = self.flip_base(ee_pos, "left", 0)
-
-                    self.base = new_base
-                elif int(index) == 6:
-                    new_base = flip_base(ee_pos, orientation[int(index)], 0)
-                    new_base = flip_base(ee_pos, "left", -90)
-                    #
-                    new_pos = create_point_from_homogeneous_transform(new_base)
-                    #
-                    # new_base = new_base * flip_base(ee_pos, "left", 0)
-                    # #
-                    # ee_pos[0] = ee_pos[0] + 0.5
-                    new_base = new_base * flip_base(ee_pos, "top", 0)
-
-                    new_base[0:3, 3] = new_pos
-                    new_base[0, 3] = new_base[0, 3] - 0.5
-                    new_base[2, 3] = new_base[2, 3] - 0.5
-                    # ee_pos = robot.end_effector_position()
-                    # ee_pos = ee_pos.tolist()[0]
-                    # ee_pos[0] = math.floor(ee_pos[0])+1
-                    # ee_pos[2] = round(ee_pos[2])-0.5
-                    # new_base = flip_base(ee_pos, "left", 0)
-                    self.base = new_base
-                    # direction = "top"
-                    # previous_direction = "top"
-                    # print("ROBOT BASE: {}
-                else:
-                    new_base = flip_base(ee_pos, orientation[int(index)], 0)
+                # if int(index) == 4:
+                #     new_base = flip_base(ee_pos, "left", 0)
+                #     new_base = flip_base(ee_pos, "left", -90)
+                #     #
+                #     new_pos = create_point_from_homogeneous_transform(new_base)
+                #     #
+                #     # new_base = new_base * flip_base(ee_pos, "left", 0)
+                #     # #
+                #
+                #     # ee_pos[0] = ee_pos[0] + 0.5
+                #     # new_base = new_base * flip_base(ee_pos, "top", 0)
+                #
+                #     new_base[0:3, 3] = new_pos
+                #     new_base[0, 3] = new_base[0, 3] + 0.5
+                #     new_base[2, 3] = new_base[2, 3] + 0.5
+                #     self.base = new_base
+                #
+                #     # ee_pos = self.end_effector_position()
+                #     # ee_pos = ee_pos.tolist()[0]
+                #     # ee_pos[0] = math.floor(ee_pos[0])+1
+                #     # ee_pos[2] = round(ee_pos[2])-0.5
+                #     # new_base = self.flip_base(ee_pos, "left", 0)
+                #
+                #     self.base = new_base
+                # elif int(index) == 6:
+                #     new_base = flip_base(ee_pos, orientation[int(index)], 0)
+                #     new_base = flip_base(ee_pos, "left", -90)
+                #     #
+                #     new_pos = create_point_from_homogeneous_transform(new_base)
+                #     #
+                #     # new_base = new_base * flip_base(ee_pos, "left", 0)
+                #     # #
+                #     # ee_pos[0] = ee_pos[0] + 0.5
+                #     new_base = new_base * flip_base(ee_pos, "top", 0)
+                #
+                #     new_base[0:3, 3] = new_pos
+                #     new_base[0, 3] = new_base[0, 3] - 0.5
+                #     new_base[2, 3] = new_base[2, 3] - 0.5
+                #     # ee_pos = robot.end_effector_position()
+                #     # ee_pos = ee_pos.tolist()[0]
+                #     # ee_pos[0] = math.floor(ee_pos[0])+1
+                #     # ee_pos[2] = round(ee_pos[2])-0.5
+                #     # new_base = flip_base(ee_pos, "left", 0)
+                #     self.base = new_base
+                #     # direction = "top"
+                #     # previous_direction = "top"
+                #     # print("ROBOT BASE: {}
+                # else:
+                new_base = flip_base(ee_pos, orientation[int(index)], 0)
 
                 flipped=False
             else:
@@ -339,50 +339,50 @@ class SerialLink:
                 #             break
                 #         else:
                 #             new_base = tr.trotz(180, unit="deg", xyz=ee_pos)
-                if int(index) == 3:
-                    # new_base = self.flip_base(ee_pos, orientation[int(index)], 270)
-                    new_base = flip_base(ee_pos, "left", -90)
-
-                    new_pos = create_point_from_homogeneous_transform(new_base)
-                    # self.base=new_base
-
-                    # ee_pos = self.end_effector_position(new_base[0:3, 3])
-                    # ee_pos = ee_pos.tolist()[0]
-                    # ee_pos[0] = math.floor(ee_pos[0])
-                    # ee_pos[2] = round(ee_pos[2])
-                    # ee_pos[0] = ee_pos[0] + 0.5
-                    new_base = new_base * flip_base(ee_pos, "top", 180)
-                    #
-                    new_base[0:3,3] = new_pos
-                    new_base[0, 3] = new_base[0, 3] + 0.5
-                    new_base[2, 3] = new_base[2, 3] + 0.5
-                    self.base = new_base
-
-                    # new_base = self.flip_base(ee_pos, "left", 90)
-                    self.base = new_base
-
-                elif int(index) == 5:
-                    new_base = flip_base(ee_pos, "left", -90)
-                    #
-                    new_pos = create_point_from_homogeneous_transform(new_base)
-                    #
-                    # new_base = new_base * flip_base(ee_pos, "left", 0)
-                    # #
-                    # ee_pos[0] = ee_pos[0] + 0.5
-                    new_base = new_base * flip_base(ee_pos, "top", 180)
-
-                    new_base[0:3, 3] = new_pos
-                    new_base[0, 3] = new_base[0, 3] + 0.5
-                    new_base[2, 3] = new_base[2, 3]
-                    # ee_pos = robot.end_effector_position()
-                    # ee_pos = ee_pos.tolist()[0]
-                    # ee_pos[0] = math.floor(ee_pos[0])+1
-                    # ee_pos[2] = round(ee_pos[2])-0.5
-                    # new_base = flip_base(ee_pos, "left", 0)
-                    self.base = new_base
-                    # direction = "top"
-                    # previous_direction = "top"
-                    # print("ROBOT BASE: {} END_EFFECTOR_POS: {}".format(self.base, self.end_effector_position()))
+                # if int(index) == 3:
+                #     # new_base = self.flip_base(ee_pos, orientation[int(index)], 270)
+                #     new_base = flip_base(ee_pos, "left", -90)
+                #
+                #     new_pos = create_point_from_homogeneous_transform(new_base)
+                #     # self.base=new_base
+                #
+                #     # ee_pos = self.end_effector_position(new_base[0:3, 3])
+                #     # ee_pos = ee_pos.tolist()[0]
+                #     # ee_pos[0] = math.floor(ee_pos[0])
+                #     # ee_pos[2] = round(ee_pos[2])
+                #     # ee_pos[0] = ee_pos[0] + 0.5
+                #     new_base = new_base * flip_base(ee_pos, "top", 180)
+                #     #
+                #     new_base[0:3,3] = new_pos
+                #     new_base[0, 3] = new_base[0, 3] + 0.5
+                #     new_base[2, 3] = new_base[2, 3] + 0.5
+                #     self.base = new_base
+                #
+                #     # new_base = self.flip_base(ee_pos, "left", 90)
+                #     self.base = new_base
+                #
+                # elif int(index) == 5:
+                #     new_base = flip_base(ee_pos, "left", -90)
+                #     #
+                #     new_pos = create_point_from_homogeneous_transform(new_base)
+                #     #
+                #     # new_base = new_base * flip_base(ee_pos, "left", 0)
+                #     # #
+                #     # ee_pos[0] = ee_pos[0] + 0.5
+                #     new_base = new_base * flip_base(ee_pos, "top", 180)
+                #
+                #     new_base[0:3, 3] = new_pos
+                #     new_base[0, 3] = new_base[0, 3] + 0.5
+                #     new_base[2, 3] = new_base[2, 3]
+                #     # ee_pos = robot.end_effector_position()
+                #     # ee_pos = ee_pos.tolist()[0]
+                #     # ee_pos[0] = math.floor(ee_pos[0])+1
+                #     # ee_pos[2] = round(ee_pos[2])-0.5
+                #     # new_base = flip_base(ee_pos, "left", 0)
+                #     self.base = new_base
+                #     # direction = "top"
+                #     # previous_direction = "top"
+                #     # print("ROBOT BASE: {} END_EFFECTOR_POS: {}".format(self.base, self.end_effector_position()))
 
                 # elif int(index) == 4:
                 #     new_base = self.base * self.flip_base(ee_pos, "left", 180)
@@ -425,7 +425,7 @@ class SerialLink:
 
         return t
 
-    def ikineConstrained(self, direction, p, num_iterations=1000, alpha=0.1, prior_q=None, vertical=False, flipped=False):
+    def ikineConstrained(self, direction, p, accuracy=1e-7, num_iterations=1000, alpha=0.1, prior_q=None, vertical=False, flipped=False):
         """Computes the inverse kinematics to find the correct joint
         configuration to reach a given point
 
@@ -494,7 +494,7 @@ class SerialLink:
                 q[-1] = q[-1] - pi / 2
 
 
-            if abs(np.linalg.norm(err)) <= 1e-4:
+            if abs(np.linalg.norm(err)) <= accuracy:
 
                 absolute = np.absolute(q[1])+ (pi - np.absolute(q[2]))
                 q[-1] = -1*(1.57-(9.4248 - absolute - 2 * pi))
@@ -778,12 +778,12 @@ class SerialLink:
             self.update_angles(stances[self.pipeline.timer_count].tolist()[0])
 
             if obstacles is not None:
-                print("Obstacles is not none")
+                # print("Obstacles is not none")
                 for i in obstacles:
-                    print(i)
-                    print(self.pipeline.timer_count)
+                    # print(i)
+                    # print(self.pipeline.timer_count)
                     if i[0] == self.pipeline.timer_count:
-                        print("Adding actor")
+                        # print("Adding actor")
                         self._add_block(i[1])
                         self.pipeline.animate()
 
