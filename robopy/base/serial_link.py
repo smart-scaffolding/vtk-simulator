@@ -691,7 +691,7 @@ class SerialLink:
 
                             for point in animation_update.trajectory:
 
-                                previous_point.append(self.pipeline.add_actor(circleForTrajectory(point)))
+                                previous_point.append(self.pipeline.add_actor(circleForTrajectory(point, animation_update.direction)))
                         self.pipeline.animate()
 
 

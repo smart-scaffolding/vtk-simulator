@@ -321,14 +321,17 @@ def cubeForPath(point):
     prop_assembly.AddPart(cube_actor)
     return prop_assembly
 
-def circleForTrajectory(point):
+def circleForTrajectory(point, direction):
     colors = vtk.vtkNamedColors()
     prop_assembly = vtk.vtkPropAssembly()
 
     source = vtk.vtkSphereSource()
+    if direction == "left":
+        point[0] = point[0] + 1.37
+        point[2] = point[2] + 1.37
     source.SetCenter(point)
     source.SetRadius(0.09)
-
+    # source.SetRadius(0.75)
 
     source.Update()
 

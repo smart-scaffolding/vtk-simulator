@@ -194,11 +194,11 @@ def flip_base(ee_pos, direction, value, animation=False):
 
         new_base[0:3, 3] = new_pos
         if animation:
-            new_base[0, 3] = new_base[0, 3] + 0.5
-            new_base[2, 3] = new_base[2, 3] + 0.5
+            new_base[0, 3] = new_base[0, 3] + 0.5 #+0.5
+            new_base[2, 3] = new_base[2, 3] + 0.5 #+0.5
         else:
-            new_base[0, 3] = new_base[0, 3] + 1.37
-            new_base[2, 3] = new_base[2, 3] + 1.37
+            new_base[0, 3] = new_base[0, 3] + 1.37 #+1.37
+            new_base[2, 3] = new_base[2, 3] + 1.37 #+1.37
 
 
     if direction =="front" or direction=="back":

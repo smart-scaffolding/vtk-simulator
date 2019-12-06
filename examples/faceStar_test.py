@@ -10,7 +10,7 @@ import time
 accuracy = 1e-7
 threshold = 1
 # num_way_points = 2
-use_face_star = True
+use_face_star = False
 
 def main():
     blueprint = np.array([
@@ -57,9 +57,9 @@ def main():
     num_steps = 20
 
     startFace = BlockFace(1, 0, 0, 'top')
-    # endFace = BlockFace(5, 2, 3, 'top')
+    endFace = BlockFace(5, 2, 3, 'top')
     # endFace = BlockFace(4, 1, 2, 'top')
-    endFace = BlockFace(5, 0, 0, 'top')
+    # endFace = BlockFace(5, 0, 0, 'top')
     # endFace = BlockFace(3, 2, 3, "left")
     # endFace= BlockFace(3, 2, 5, "left")
 
@@ -203,9 +203,9 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint):
             point[1] = item[1] + 0.5
             point[2] = item[2] + 1
         if direction == "left" or direction =="right":
-            point[0] = item[0] - 1.37
+            point[0] = item[0] - 1.37 #-1.37
             point[1] = item[1] + 0.5
-            point[2] = item[2] - 0.87
+            point[2] = item[2] - 0.87 #-.87
         if direction == "front" or direction =="back":
             point[0] = item[0] + 0.5
             point[1] = item[1] + 1
@@ -390,6 +390,7 @@ def add_offset(ee_pos, direction, offset, previous_point=None, index=None):
 
     if direction == "left":
         ee_pos[0] = float(ee_pos[0]) - offset
+        # ee_pos[2] = ee_pos[2] - 0.5
         # if previous_point is not None:
         #     print("BACK FOOT POS: {}".format(previous_point))
         #     ee_pos[2] = previous_point[2][0]
@@ -398,10 +399,10 @@ def add_offset(ee_pos, direction, offset, previous_point=None, index=None):
         #     ee_pos[2] = 1
         # if index == 4:
         #     ee_pos[2] = 1
-        if index == 5:
-            print("\n\nIndex 5")
-            print(previous_point)
-            print(ee_pos)
+        # if index == 5:
+        #     print("\n\nIndex 5")
+        #     print(previous_point)
+        #     print(ee_pos)
         # if index == 6:
         #     ee_pos[2] = 1
     if direction == "right":
