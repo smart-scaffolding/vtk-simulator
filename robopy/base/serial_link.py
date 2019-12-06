@@ -11,7 +11,7 @@ from .graphics import VtkPipeline
 from .graphics import axesCube
 from .graphics import axesCubeFloor
 from .graphics import vtk_named_colors
-from .graphics import cubeForPath
+from .graphics import cubeForPath, circleForTrajectory
 from .graphics import MakeAxesActor
 from .graphics import vtk_named_colors
 import pkg_resources
@@ -266,133 +266,16 @@ class SerialLink:
 
             index = (timer/num_steps)
             if index % 2 == 0:
-                # if
-                # if directions == None:
-                #     new_base = tr.trotz(0, unit="deg", xyz=ee_pos)
-                # # else:
-                # #     for direction in directions:
-                # #         if timer >= 50:
-                # #             new_base = self.flip_base(ee_pos, "left", 90)
-                # #             break
-                # #         else:
-                # #             new_base = tr.trotz(0, unit="deg", xyz=ee_pos)
-                # if int(index) == 4:
-                #     new_base = flip_base(ee_pos, "left", 0)
-                #     new_base = flip_base(ee_pos, "left", -90)
-                #     #
-                #     new_pos = create_point_from_homogeneous_transform(new_base)
-                #     #
-                #     # new_base = new_base * flip_base(ee_pos, "left", 0)
-                #     # #
-                #
-                #     # ee_pos[0] = ee_pos[0] + 0.5
-                #     # new_base = new_base * flip_base(ee_pos, "top", 0)
-                #
-                #     new_base[0:3, 3] = new_pos
-                #     new_base[0, 3] = new_base[0, 3] + 0.5
-                #     new_base[2, 3] = new_base[2, 3] + 0.5
-                #     self.base = new_base
-                #
-                #     # ee_pos = self.end_effector_position()
-                #     # ee_pos = ee_pos.tolist()[0]
-                #     # ee_pos[0] = math.floor(ee_pos[0])+1
-                #     # ee_pos[2] = round(ee_pos[2])-0.5
-                #     # new_base = self.flip_base(ee_pos, "left", 0)
-                #
-                #     self.base = new_base
-                # elif int(index) == 6:
-                #     new_base = flip_base(ee_pos, orientation[int(index)], 0)
-                #     new_base = flip_base(ee_pos, "left", -90)
-                #     #
-                #     new_pos = create_point_from_homogeneous_transform(new_base)
-                #     #
-                #     # new_base = new_base * flip_base(ee_pos, "left", 0)
-                #     # #
-                #     # ee_pos[0] = ee_pos[0] + 0.5
-                #     new_base = new_base * flip_base(ee_pos, "top", 0)
-                #
-                #     new_base[0:3, 3] = new_pos
-                #     new_base[0, 3] = new_base[0, 3] - 0.5
-                #     new_base[2, 3] = new_base[2, 3] - 0.5
-                #     # ee_pos = robot.end_effector_position()
-                #     # ee_pos = ee_pos.tolist()[0]
-                #     # ee_pos[0] = math.floor(ee_pos[0])+1
-                #     # ee_pos[2] = round(ee_pos[2])-0.5
-                #     # new_base = flip_base(ee_pos, "left", 0)
-                #     self.base = new_base
-                #     # direction = "top"
-                #     # previous_direction = "top"
-                #     # print("ROBOT BASE: {}
-                # else:
-                new_base = flip_base(ee_pos, orientation[int(index)], 0)
+
+                new_base = flip_base(ee_pos, orientation[int(index)], 0, animation=True)
 
                 flipped=False
             else:
-                new_base = flip_base(ee_pos, orientation[int(index)], 180)
-                # new_base = tr.trotz(180, unit="deg", xyz=ee_pos)
-                # if directions == None:
-                #     new_base = tr.trotz(180, unit="deg", xyz=ee_pos)
-                # else:
-                #     for direction in directions:
-                #         if timer >= 50:
-                #             new_base = self.flip_base(ee_pos, "left", 180)
-                #             break
-                #         else:
-                #             new_base = tr.trotz(180, unit="deg", xyz=ee_pos)
-                # if int(index) == 3:
-                #     # new_base = self.flip_base(ee_pos, orientation[int(index)], 270)
-                #     new_base = flip_base(ee_pos, "left", -90)
-                #
-                #     new_pos = create_point_from_homogeneous_transform(new_base)
-                #     # self.base=new_base
-                #
-                #     # ee_pos = self.end_effector_position(new_base[0:3, 3])
-                #     # ee_pos = ee_pos.tolist()[0]
-                #     # ee_pos[0] = math.floor(ee_pos[0])
-                #     # ee_pos[2] = round(ee_pos[2])
-                #     # ee_pos[0] = ee_pos[0] + 0.5
-                #     new_base = new_base * flip_base(ee_pos, "top", 180)
-                #     #
-                #     new_base[0:3,3] = new_pos
-                #     new_base[0, 3] = new_base[0, 3] + 0.5
-                #     new_base[2, 3] = new_base[2, 3] + 0.5
-                #     self.base = new_base
-                #
-                #     # new_base = self.flip_base(ee_pos, "left", 90)
-                #     self.base = new_base
-                #
-                # elif int(index) == 5:
-                #     new_base = flip_base(ee_pos, "left", -90)
-                #     #
-                #     new_pos = create_point_from_homogeneous_transform(new_base)
-                #     #
-                #     # new_base = new_base * flip_base(ee_pos, "left", 0)
-                #     # #
-                #     # ee_pos[0] = ee_pos[0] + 0.5
-                #     new_base = new_base * flip_base(ee_pos, "top", 180)
-                #
-                #     new_base[0:3, 3] = new_pos
-                #     new_base[0, 3] = new_base[0, 3] + 0.5
-                #     new_base[2, 3] = new_base[2, 3]
-                #     # ee_pos = robot.end_effector_position()
-                #     # ee_pos = ee_pos.tolist()[0]
-                #     # ee_pos[0] = math.floor(ee_pos[0])+1
-                #     # ee_pos[2] = round(ee_pos[2])-0.5
-                #     # new_base = flip_base(ee_pos, "left", 0)
-                #     self.base = new_base
-                #     # direction = "top"
-                #     # previous_direction = "top"
-                #     # print("ROBOT BASE: {} END_EFFECTOR_POS: {}".format(self.base, self.end_effector_position()))
-
-                # elif int(index) == 4:
-                #     new_base = self.base * self.flip_base(ee_pos, "left", 180)
-
-
+                new_base = flip_base(ee_pos, orientation[int(index)], 180, animation=True)
 
                 flipped=True
-            print("EE_POS: {}".format(ee_pos))
-            # new_base = new_base + tr.trotz(-90, unit='deg')
 
+            # print("EE_POS: {}".format(ee_pos))
             self.base = new_base
         if stance is None:
             t = self.links[0].transform_matrix
@@ -740,7 +623,7 @@ class SerialLink:
 
         return file_names
 
-    def animate(self, stances, unit='rad', frame_rate=25, gif=None, num_steps=None, display_path=True, obstacles=None, path=None, directions=None, orientation=None):
+    def animate(self, stances, unit='rad', frame_rate=25, gif=None, num_steps=None,obstacles=None, directions=None, orientation=None, showPath=True, showPlacedBlock=True, showTrajectory=True,  update=None):
         """
         Animates SerialLink object over nx6 dimensional input matrix, with each row representing list of 6 joint angles.
         :param stances: nx6 dimensional input matrix.
@@ -753,6 +636,8 @@ class SerialLink:
         if unit == 'deg':
             stances = stances * np.pi / 180
 
+        # print(stances.shape[0]-1)
+        # print(stances.shape)
         self.pipeline = VtkPipeline(total_time_steps=stances.shape[0] - 1, gif_file=gif)
         self.pipeline.reader_list, self.pipeline.actor_list, self.pipeline.mapper_list = self.__setup_pipeline_objs()
         self.fkine(stances, apply_stance=True, actor_list=self.pipeline.actor_list, directions=None)
@@ -769,16 +654,17 @@ class SerialLink:
                                   self.param.get("floor_position"))
 
         self.pipeline.add_actor(cube_axes)
-
+        previous_point = []
+        previous_path = []
 
         def execute(obj, event):
-            nonlocal stances, obstacles
+            nonlocal stances, obstacles, previous_point
             self.pipeline.timer_tick()
             self.fkine(stances, apply_stance=True, actor_list=self.pipeline.actor_list, timer=self.pipeline.timer_count, num_steps=num_steps, directions=None, orientation=orientation)
             self.update_angles(stances[self.pipeline.timer_count].tolist()[0])
-
-            if obstacles is not None:
-                # print("Obstacles is not none")
+            timer = self.pipeline.timer_count
+            index = (timer / num_steps)
+            if obstacles is not None and showPlacedBlock:
                 for i in obstacles:
                     # print(i)
                     # print(self.pipeline.timer_count)
@@ -787,31 +673,37 @@ class SerialLink:
                         self._add_block(i[1])
                         self.pipeline.animate()
 
-            # if path is not None:
-            #     print("Path is not none")
-            #     for i in path:
-            #         print("Path Timer: {}".format(i))
-            #         print(self.pipeline.timer_count)
-            #         if i[0] == self.pipeline.timer_count:
-            #             print("Adding path")
-            #             for point in i[1]:
-            #                 self.pipeline.add_actor(cubeForPath(point))
-            #             # self._add_block(i[1])
-            #             self.pipeline.animate()
+            if update is not None:
+                for animation_update in update:
+                    if animation_update.index == index:
+                        if showPath:
+                            for i in previous_path:
+                                self.pipeline.remove_actor(i)
+                                previous_path.remove(i)
 
-            # self.pipeline.add_actor(cubeForPath((0, 0, 0, "top")))
-            # self.pipeline.animate()
-            # print(self.get_current_joint_config(unit='deg'))
-            # print(self.end_effector_position())
+                            for point in animation_update.path:
+                                previous_path.append(self.pipeline.add_actor(cubeForPath(point)))
+
+                        if showTrajectory:
+                            for i in previous_point:
+                                self.pipeline.remove_actor(i)
+                                previous_point.remove(i)
+
+                            for point in animation_update.trajectory:
+
+                                previous_point.append(self.pipeline.add_actor(circleForTrajectory(point)))
+                        self.pipeline.animate()
+
+
+
             self.pipeline.iren = obj
             self.pipeline.iren.GetRenderWindow().Render()
-            # for i, each in enumerate(self.pipeline.actor_list):
-            #     each.SetScale(self.scale)
+
 
         self.pipeline.iren.AddObserver('TimerEvent', execute)
         self.__setup_structure_display()
-        if display_path:
-            self.pipeline.add_actor(self._display_path())
+        # if display_path:
+        #     self.pipeline.add_actor(self._display_path())
 
         xyzLabels = ['X', 'Y', 'Z']
         scale = [1.0, 1.0, 1.0]

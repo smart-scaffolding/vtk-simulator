@@ -64,6 +64,12 @@ class VtkPipeline:
 
     def add_actor(self, actor):
         self.actor_list.append(actor)
+        return actor
+
+    def remove_actor(self, actor):
+        self.actor_list.remove(actor)
+        self.ren.RemoveActor(actor)
+
 
     def set_camera(self):
         cam = self.ren.GetActiveCamera()
@@ -228,13 +234,16 @@ def cubeForPath(point):
 
     direction = point[3]
     cube_source = vtk.vtkCubeSource()
-    cube_source.SetCenter((point[0] + 0.5, point[1] + 0.5, point[2] + 0.5))
+    cube_source.SetCenter((point[0] + 0.49, point[1] + 0.49, point[2] + 0.49))
+
     cube_source.Update()
     face_colors = vtk.vtkUnsignedCharArray()
     face_colors.SetNumberOfComponents(3)
 
     if direction == "top":
-
+        cube_source.SetXLength(0.25)
+        cube_source.SetYLength(0.25)
+        cube_source.SetZLength(1.1)
         face_x_plus = colors.GetColor3ub('DarkGreen')
         face_x_minus = colors.GetColor3ub('DarkGreen')
         face_y_plus = colors.GetColor3ub('DarkGreen')
@@ -261,6 +270,9 @@ def cubeForPath(point):
         face_z_minus = colors.GetColor3ub('DarkGreen')
 
     if direction == "left":
+        cube_source.SetXLength(1)
+        cube_source.SetYLength(0.25)
+        cube_source.SetZLength(0.25)
 
         face_x_plus = colors.GetColor3ub('DarkGreen')
         face_x_minus = colors.GetColor3ub('Cyan')
@@ -309,6 +321,29 @@ def cubeForPath(point):
     prop_assembly.AddPart(cube_actor)
     return prop_assembly
 
+def circleForTrajectory(point):
+    colors = vtk.vtkNamedColors()
+    prop_assembly = vtk.vtkPropAssembly()
+
+    source = vtk.vtkSphereSource()
+    source.SetCenter(point)
+    source.SetRadius(0.09)
+
+
+    source.Update()
+
+    circle_mapper = vtk.vtkPolyDataMapper()
+    circle_mapper.SetInputData(source.GetOutput())
+    circle_mapper.Update()
+
+    circle_actor = vtk.vtkActor()
+    circle_actor.SetMapper(circle_mapper)
+    circle_actor.GetProperty().SetColor(colors.GetColor3ub('Red')) #Color red
+
+    prop_assembly = vtk.vtkPropAssembly()
+    prop_assembly.AddPart(circle_actor)
+    return prop_assembly
+
 def MakeAxesActor(scale, xyzLabels):
     axes = vtk.vtkAxesActor()
     axes.SetScale(scale[0], scale[1], scale[2])
@@ -327,3 +362,12 @@ def MakeAxesActor(scale, xyzLabels):
     axes.GetYAxisCaptionActor2D().GetCaptionTextProperty().ShallowCopy(tprop)
     axes.GetZAxisCaptionActor2D().GetCaptionTextProperty().ShallowCopy(tprop)
     return axes
+
+class AnimationUpdate:
+    def __init__(self, robot, robot_base, index, direction, trajectory, path):
+        self.robot = robot
+        self.robot_base = robot_base
+        self.index = index
+        self.direction = direction
+        self.trajectory = trajectory
+        self.path = path

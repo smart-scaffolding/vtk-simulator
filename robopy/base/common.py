@@ -173,7 +173,7 @@ def round_end_effector_position(ee_pos, direction, point, offset=None):
     ee_pos = np.copy(point)
     return ee_pos
 
-def flip_base(ee_pos, direction, value):
+def flip_base(ee_pos, direction, value, animation=False):
     # ee_pos = np.copy(ee_pos).tolist()[0]
     # ee_pos[0] = math.floor(ee_pos[0])
     # ee_pos[2] = round(ee_pos[2])
@@ -186,6 +186,20 @@ def flip_base(ee_pos, direction, value):
         # ee_pos[0] = ee_pos[0] + 0.5
         # ee_pos[2] = ee_pos[2]
         new_base = tr.troty(value, unit="deg", xyz=ee_pos)
+
+        new_base = tr.troty(-90, unit="deg", xyz=ee_pos)
+
+        new_pos = create_point_from_homogeneous_transform(new_base)
+        new_base = new_base * tr.trotz(value, unit="deg", xyz=ee_pos)
+
+        new_base[0:3, 3] = new_pos
+        if animation:
+            new_base[0, 3] = new_base[0, 3] + 0.5
+            new_base[2, 3] = new_base[2, 3] + 0.5
+        else:
+            new_base[0, 3] = new_base[0, 3] + 1.37
+            new_base[2, 3] = new_base[2, 3] + 1.37
+
 
     if direction =="front" or direction=="back":
         new_base = tr.trotx(value, unit="deg", xyz=ee_pos)

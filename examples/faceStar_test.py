@@ -4,11 +4,13 @@ import robopy.base.transforms as tr
 import math
 from robopy.base.FaceStar import *
 from robopy.base.common import create_point_from_homogeneous_transform, flip_base, round_end_effector_position
+from robopy.base.graphics import AnimationUpdate
 import time
 
 accuracy = 1e-7
 threshold = 1
-
+# num_way_points = 2
+use_face_star = True
 
 def main():
     blueprint = np.array([
@@ -22,6 +24,8 @@ def main():
         [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]
     ])
 
+
+    #playground
     blueprint = np.array([
         [[1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]],
         [[1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]],
@@ -29,6 +33,16 @@ def main():
         [[1, 0, 0, 0], [1, 1, 0, 0], [1, 1, 1, 1]],
         [[1, 0, 0, 0], [1, 1, 1, 0], [1, 1, 1, 1]],
         [[1, 0, 0, 0], [1, 1, 1, 1], [1, 1, 1, 1]],
+    ])
+
+    #modified playground
+    blueprint = np.array([
+        [[1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0]],
+        [[1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0]],
+        [[1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0]],
+        [[1, 0, 0, 0, 0, 0, 0], [1, 1, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1]],
+        [[1, 0, 0, 0, 0, 0, 0], [1, 1, 1, 0, 0, 0, 0], [1, 1, 1, 1, 0, 0, 0]],
+        [[1, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 0, 0, 0], [1, 1, 1, 1, 0, 0, 0]],
     ])
 
     # robot = model.Puma560_TEST(base=np.matrix([[1, 0, 0, 0.5],
@@ -42,14 +56,15 @@ def main():
 
     num_steps = 20
 
-    startFace = BlockFace(1, 1, 0, 'top')
-    endFace = BlockFace(5, 2, 3, 'top')
+    startFace = BlockFace(1, 0, 0, 'top')
+    # endFace = BlockFace(5, 2, 3, 'top')
     # endFace = BlockFace(4, 1, 2, 'top')
-    # endFace = BlockFace(5, 0, 0, 'top')
+    endFace = BlockFace(5, 0, 0, 'top')
     # endFace = BlockFace(3, 2, 3, "left")
+    # endFace= BlockFace(3, 2, 5, "left")
 
     # (2, 1, 0, 'top'), (3, 1, 0, 'top'), (4, 1, 0, 'top'), (5, 1, 1, 'top'), (6, 1, 2, 'top'), (6, 2, 3, 'top')]
-    ik_motion, path, directions = follow_path(robot, num_steps, offset=1, startFace=startFace, endFace=endFace, blueprint=blueprint)
+    ik_motion, path, directions, animation_update = follow_path(robot, num_steps, offset=1, startFace=startFace, endFace=endFace, blueprint=blueprint)
 
 
     robot = model.Puma560_TEST(base=np.matrix([[1, 0, 0, 0.5],
@@ -57,10 +72,15 @@ def main():
                                                [0, 0, 1, 1.],
                                                [0, 0, 0, 1]]), blueprint=blueprint)
 
-    robot_orientation = ["top"] * (len(path[0][1:][0])) * 2
-    print("Robot Orientation Original: {}".format(robot_orientation))
+
     print("Path Length: {}".format(len(path[0][1:][0])))
+    print("Path: {}".format(path))
     print("Num Steps: {}".format(num_steps))
+
+    robot_orientation = ["top"] * (len(path[0][1:][0]))
+    if use_face_star:
+        robot_orientation = ["top"] * (len(path[0][1:][0])) * 2
+    print("Robot Orientation Original: {}".format(robot_orientation))
     modified_path = path[0][1:][0]
     for index, position in enumerate(modified_path):
         direction = position[-1]
@@ -75,7 +95,7 @@ def main():
 
     print("Robot Orientation: {}".format(robot_orientation))
 
-    robot.animate(stances=ik_motion, frame_rate=30, unit='deg', num_steps=num_steps * 3, display_path=False, obstacles=[[num_steps*9, (5, 0, 0)], [num_steps*15, (6, 0, 0)]], path=path, directions=directions, orientation=robot_orientation)
+    robot.animate(stances=ik_motion, frame_rate=30, unit='deg', num_steps=num_steps*3, obstacles=[[num_steps*9, (5, 0, 0)], [num_steps*15, (6, 0, 0)]], directions=directions, orientation=robot_orientation, showPath=True, showPlacedBlock=False, update=animation_update)
 
 def move_to_point(direction, point, robot, num_steps, previous_angles=None, flip_angles=False, accuracy=accuracy):
     # print(point)
@@ -129,7 +149,8 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint):
     #         (7.49, 1.49, 4),(6.5, 1.5, 3),(7.5, 2.5, 4), (7.5, 1.5, 4), (6.5, 2.5, 4), (7.5, 2.5, 4), (5.5, 2.5, 4),(6.5, 2.5, 4)]
 
     # path = [(2.49, 2.49, 1.3, "top"), (0.49, 2.49, 1.3, "top"),(2, 2.49, 2.5, "left")]
-    # path = [(1, 2, 0, "top"), (0, 2, 0, "top"), (3, 2, 3, "left"), (3, 2, 2, "left"), (3, 2, 5, "left")  ]
+    if not use_face_star:
+        path = [(1, 2, 0, "top"), (0, 2, 0, "top"), (3, 2, 3, "left"), (3, 2, 2, "left"), (3, 2, 5, "left"), (3, 2, 4, "left") ]
     # armReach = [2.38, 1.58]
 
     # armReach = [1.5, 1.5]
@@ -137,31 +158,32 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint):
     armReach = [1.5, 1.5]
 
 
+    if use_face_star:
 
-    faceStarPlanner = FaceStar(startFace, endFace, blueprint, armReach)
-    path = faceStarPlanner.get_path()
+        faceStarPlanner = FaceStar(startFace, endFace, blueprint, armReach)
+        path = faceStarPlanner.get_path()
     # #
     global_path = []
     global_path.append((num_steps, path))
 
-    filtered_path = []
-    for index, point in enumerate(path):
-        filtered_path.append(point)
-        if index == 0:
-            filtered_path.append((0, 1, 0, "top"))
-        else:
-            filtered_path.append(path[index-1])
+    if use_face_star:
+        filtered_path = []
+        for index, point in enumerate(path):
+            filtered_path.append(point)
+            if index == 0:
+                filtered_path.append((0, 0, 0, "top"))
+            else:
+                filtered_path.append(path[index-1])
 
-    # filtered_path.append((6, 2, 3, "top"))
-    # filtered_path.append((6, 1, 2, "top"))
-    #
-    path = filtered_path
+        path = filtered_path
 
     global_direction = []
 
+    update_animation = []
 
     save_path = None
     previous_point = None
+    back_foot_pos = None
     # previous_direction = "top"
     for index, item in enumerate(path):
         # move_ee_up = robot.end_effector_position().flatten().tolist()[0]
@@ -188,26 +210,50 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint):
             point[0] = item[0] + 0.5
             point[1] = item[1] + 1
             point[2] = item[2] + 0.5
-        # move_ee_up = np.copy(path[index-1])
-        # print(move_ee_up)
-        # TODO: FIX TO ACCEPT ANY ORIENTATION, NOT JUST +Z
 
-        # move_ee_up[2] = add_offset(float(move_ee_up[2]) + offset
-        # move_ee_up = add_offset(move_ee_up, direction, offset)
+        print("\t\t\n\nINDEX: {}".format(index))
+        print("\nPOINT: {}   DIRECTION: {}    PREVIOUS_DIRECTION: {}".format(point, direction, path[index-1][-1]))
 
-        print("\n\nPOINT: {}   DIRECTION: {}    PREVIOUS_DIRECTION: {}".format(point, direction, path[index-1][-1]))
+
         if index == 0:
-            move_up = list(point)
+            ee_up = list(point)
             # TODO: FIX TO ACCEPT ANY ORIENTATION, NOT JUST +Z
             # move_up[2] = move_up[2] + offset
+            previous_angles_1, previous_angles_2, previous_angles_3 = None, None, None
 
-            move_up = add_offset(move_up, previous_direction, offset)
+            ee_up = add_offset(ee_up, previous_direction, offset)
+
+            # divorce_wall = np.linspace(robot.end_effector_position().tolist()[0], move_up, num_way_points)
+
+            # for waypoint in divorce_wall:
+            #     if previous_angles_1 is not None:
+            #         previous_angles_1 = np.vstack([previous_angles_1,
+            #                                        move_to_point(direction, waypoint, robot, num_steps,
+            #                                                      previous_angles_1[-1].flatten().tolist()[0])])
+            #     else:
+            previous_angles_1 = move_to_point(direction, ee_up, robot, num_steps)
 
 
-            previous_angles_1 = move_to_point(direction, move_up, robot, num_steps)
+            # for waypoint in range(num_steps):
+            #     if previous_angles_2 is not None:
+            #         previous_angles_2 = np.vstack([previous_angles_2,
+            #                                        move_to_point(direction, point, robot, num_steps,
+            #                                                      previous_angles_2[-1].flatten().tolist()[0])])
+            #     else:
+            stop_above = point
+            previous_angles_2 = move_to_point(direction, point, robot, num_steps,
+                                                      previous_angles_1[-1].flatten().tolist()[0])
 
-            previous_angles_2 = move_to_point(direction, point, robot, num_steps, previous_angles_1[-1].flatten().tolist()[0])
-            previous_angles_3 = move_to_point(direction, point, robot, num_steps, previous_angles_2[-1].flatten().tolist()[0])
+
+            # for waypoint in range(num_steps):
+            #     if previous_angles_3 is not None:
+            #         previous_angles_3 = np.vstack([previous_angles_3,
+            #                                        move_to_point(direction, point, robot, num_steps,
+            #                                                      previous_angles_2[-1].flatten().tolist()[0])])
+            #     else:
+            previous_angles_3 = move_to_point(direction, point, robot, num_steps,
+                                                      previous_angles_2[-1].flatten().tolist()[0])
+
 
 
 
@@ -215,67 +261,13 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint):
         else:
             ee_pos = robot.end_effector_position()
             initial_angles = previous_angles_3[-1].flatten().tolist()[0]
-
+            #
             ee_pos = round_end_effector_position(ee_pos.tolist()[0], direction, previous_point)
+            # ee_pos = np.copy(previous_point)
 
             if (index) % 2 == 0:
 
-
-                # new_base = tr.trotz(0, unit="deg", xyz=ee_pos)
-                # if int(index) == 4:
-                #     new_base = flip_base(ee_pos, direction, 0)
-                #     new_base = flip_base(ee_pos, "left", -90)
-                #     #
-                #     new_pos = create_point_from_homogeneous_transform(new_base)
-                #     #
-                #     # new_base = new_base * flip_base(ee_pos, "left", 0)
-                #     # #
-                #     # ee_pos[0] = ee_pos[0] + 0.5
-                #     # new_base = new_base * flip_base(ee_pos, "top", 180)
-                #
-                #     new_base[0:3, 3] = new_pos
-                #     new_base[0, 3] = new_base[0, 3] + 0.5
-                #     new_base[2, 3] = new_base[2, 3] + 0.5
-                #     # ee_pos = robot.end_effector_position()
-                #     # ee_pos = ee_pos.tolist()[0]
-                #     # ee_pos[0] = math.floor(ee_pos[0])+1
-                #     # ee_pos[2] = round(ee_pos[2])-0.5
-                #     # new_base = flip_base(ee_pos, "left", 0)
-                #     robot.base = new_base
-                #     # direction = "top"
-                #     # previous_direction = "top"
-                #     # print("ROBOT BASE: {} END_EFFECTOR_POS: {}".format(robot.base, robot.end_effector_position()))
-                #     previous_direction = "left"
-                # elif int(index) == 6:
-                #     new_base = flip_base(ee_pos, "left", 0)
-                #     new_base = flip_base(ee_pos, "left", -90)
-                #     #
-                #     new_pos = create_point_from_homogeneous_transform(new_base)
-                #     #
-                #     # new_base = new_base * flip_base(ee_pos, "left", 0)
-                #     # #
-                #     # ee_pos[0] = ee_pos[0] + 0.5
-                #     new_base = new_base * flip_base(ee_pos, "top", 0)
-                #
-                #     new_base[0:3, 3] = new_pos
-                #     new_base[0, 3] = new_base[0, 3] + 0.5
-                #     new_base[2, 3] = new_base[2, 3] + 0.5
-                #     # ee_pos = robot.end_effector_position()
-                #     # ee_pos = ee_pos.tolist()[0]
-                #     # ee_pos[0] = math.floor(ee_pos[0])+1
-                #     # ee_pos[2] = round(ee_pos[2])-0.5
-                #     # new_base = flip_base(ee_pos, "left", 0)
-                #     robot.base = new_base
-                #     previous_direction = "left"
-                #     # direction = "top"
-                #     # previous_direction = "top"
-                #     # print("ROBOT BASE: {}
-                # # if index - 2 >= 0 and path[index - 1][-1] == direction and path[index - 2][-1] != direction:
-                # #     rotation = 90
-                # # else:
-                # #     rotation = 0
-                # else:
-                new_base = flip_base(ee_pos, direction, 0)
+                new_base = flip_base(ee_pos, previous_direction, 0)
 
                 temp = initial_angles[1]
                 initial_angles[1] = 180 / 2 + initial_angles[3]
@@ -284,68 +276,8 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint):
 
                 # global_path.append((num_steps * index, path[index:]))
             else:
-                # new_base = tr.trotz(180, unit="deg", xyz=ee_pos)
+                new_base = flip_base(ee_pos, previous_direction, 180)
 
-
-                # if index - 2 >= 0 and path[index - 1][-1] == direction and path[index - 2][-1] != direction:
-                #
-                #     rotation = 180
-                #
-                #
-                # else:
-                #     rotation = 180
-                new_base = flip_base(ee_pos, direction, 180)
-                # if index == 3:
-                #     # ee_pos = robot.end_effector_position()
-                #     # ee_pos = ee_pos.tolist()[0]
-                #     # ee_pos[0] = math.floor(ee_pos[0])+1
-                #     # ee_pos[2] = round(ee_pos[2])-0.5
-                #     # new_base = flip_base(ee_pos, "left", 90)
-                #
-                #     new_base = flip_base(ee_pos, "left", -90)
-                #
-                #     robot.base = new_base
-                #     new_pos = create_point_from_homogeneous_transform(new_base)
-                #     # self.base=new_base
-                #
-                #     # ee_pos = self.end_effector_position(new_base[0:3, 3])
-                #     # ee_pos = ee_pos.tolist()[0]
-                #     # ee_pos[0] = ee_pos[0] + 0.5
-                #     # ee_pos[2] = round(ee_pos[2])
-                #     new_base = new_base * flip_base(ee_pos, "top", 180)
-                #     #
-                #     new_base[0:3, 3] = new_pos
-                #
-                #     new_base[0, 3] = new_base[0, 3] + 0.5
-                #     new_base[2, 3] = new_base[2, 3] + 0.5
-                #     # self.base = new_base
-                #
-                #     # new_base = self.flip_base(ee_pos, "left", 90)
-                #     robot.base = new_base
-                #
-                #
-                # if int(index) == 5:
-                #     # new_base = flip_base(ee_pos, "left", 0)
-                #     new_base = flip_base(ee_pos, "left", -90)
-                #     new_pos = create_point_from_homogeneous_transform(new_base)
-                #     #
-                #     # new_base = new_base * flip_base(ee_pos, "left", 0)
-                #     # #
-                #     # ee_pos[0] = ee_pos[0] + 0.5
-                #     new_base = new_base * flip_base(ee_pos, "top", 180)
-                #
-                #     new_base[0:3, 3] = new_pos
-                #     new_base[0, 3] = new_base[0, 3] + 0.5
-                #     new_base[2, 3] = new_base[2, 3] + 0.5
-                #     # ee_pos = robot.end_effector_position()
-                #     # ee_pos = ee_pos.tolist()[0]
-                #     # ee_pos[0] = math.floor(ee_pos[0])+1
-                #     # ee_pos[2] = round(ee_pos[2])-0.5
-                #     # new_base = flip_base(ee_pos, "left", 0)
-                #     robot.base = new_base
-                #     # direction = "top"
-                #     # previous_direction = "top"
-                #     # print("ROBOT BASE: {} END_EFFECTOR_POS: {}".format(robot.base, robot.end_effector_position()))
 
                 temp = initial_angles[1]
                 initial_angles[1] = 180 / 2 + initial_angles[3]
@@ -363,62 +295,87 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint):
 
 
             # print("Initial Angles: {}".format(initial_angles))
-            ee_pos = robot.end_effector_position(np.asarray(initial_angles) * np.pi/180)
+            # ee_pos = robot.end_effector_position()
+            print("Previous Point: {}".format(previous_point))
+            ee_pos = back_foot_pos
 
 
-            # # ee_pos = robot.end_effector_position()
-            # if index == 3:
-            #     ee_up = np.copy(ee_pos).tolist()[0]
-            #     ee_up = round_end_effector_position(ee_up, direction)
-            #     print("EEEEEEEEEEEE POSITION: {}      GOING TO: {}".format(ee_up, point))
-            # else:
-            ee_up = np.copy(ee_pos).tolist()[0]
+            # ee_up = np.copy(ee_pos).tolist()[0]
+            ee_up = np.copy(ee_pos)
             # ee_up = round_end_effector_position(ee_up, direction, previous_point)
             print("Going to point: {}\t EE Pos: {}\tRounded Pos: {}".format(point, ee_pos, ee_up))
-
+            print("\tPrevious Direction: {}".format(previous_direction))
 
 
             # TODO: FIX TO ACCEPT ANY ORIENTATION, NOT JUST +Z
-            ee_up = add_offset(ee_up, previous_direction, offset)
-            # ee_up[2] = ee_up[2] + offset
+            ee_up = add_offset(ee_up, previous_direction, offset, previous_point, index=index)
 
             stop_above = np.copy(point)
 
 
             stop_above = add_offset(stop_above, direction, offset)
 
+            print("\t\t\tOffsets: \n\t\t\tEE Up: {}\n\t\t\tStop Above: {}".format(ee_up, stop_above))
+
             if direction == path[index - 1][-1]:
                 direction = "top"
                 previous_direction = "top"
 
+
+            previous_angles_1, previous_angles_2, previous_angles_3 = None, None, None
+
+            # divorce_wall = np.linspace(ee_pos, ee_up, num_way_points)
+
+            # for waypoint in divorce_wall:
+            #     if previous_angles_1 is not None:
+            #         previous_angles_1 = np.vstack([previous_angles_1, move_to_point(previous_direction, waypoint, robot, num_steps, previous_angles_1[-1].flatten().tolist()[0], flip_angles=flip_angles)])
+            #     else:
             previous_angles_1 = move_to_point(previous_direction, ee_up, robot, num_steps, initial_angles, flip_angles=flip_angles)
 
+            # stop_above_path = np.linspace(ee_up, stop_above, num_way_points)
 
-
-
+            # for waypoint in stop_above_path:
+            #     if previous_angles_2 is not None:
+            #         previous_angles_2 = np.vstack([previous_angles_2,
+            #                                            move_to_point(direction, waypoint, robot, num_steps, previous_angles_2[-1].flatten().tolist()[0], flip_angles=flip_angles)])
+            #     else:
             previous_angles_2 = move_to_point(direction, stop_above, robot, num_steps, previous_angles_1[-1].flatten().tolist()[0], flip_angles=flip_angles)
-            #
-            # if index == 3:
-            #     direction="top"
-            #
-            # if index == 4:
-            #     direction="top"
 
-
+            # reach_point = np.linspace(stop_above, point, num_way_points)
+            #
+            # for waypoint in reach_point:
+            #     if previous_angles_3 is not None:
+            #         previous_angles_3 = np.vstack([previous_angles_3,
+            #                                            move_to_point(direction, waypoint, robot, num_steps, previous_angles_3[-1].flatten().tolist()[0], flip_angles=flip_angles)])
+            #     else:
             previous_angles_3 = move_to_point(direction, point, robot, num_steps, previous_angles_2[-1].flatten().tolist()[0], flip_angles=flip_angles)
+
+            # previous_angles_3 = move_to_point(direction, point, robot, num_steps, previous_angles_2[-1].flatten().tolist()[0], flip_angles=flip_angles)
             # robot.update_angles(previous_angles_3[-1].flatten().tolist()[0], unit="rad")
 
         save_path = update_path(save_path, previous_angles_1, previous_angles_2, previous_angles_3)
 
         previous_point = point
-    return save_path, global_path, global_direction
+        back_foot_pos = create_point_from_homogeneous_transform(robot.base).flatten().tolist()[0]
+        print("BACK FOOT: {}".format(back_foot_pos))
+
+        if path[index-1][-1] == path[index][-1]:
+            direction = path[index][-1]
+        else:
+            direction = path[index-1][-1]
+
+        update_animation.append(AnimationUpdate(robot=robot, robot_base=robot.base, direction=direction, path=path[index:], index=index, trajectory=[ee_up, stop_above, point]))
+    return save_path, global_path, global_direction, update_animation
 
 def update_path(save_path, new_motion_1, new_motion_2, new_motion_3):
     if save_path is None:
         return np.concatenate((new_motion_1, new_motion_2, new_motion_3))
     return np.concatenate((save_path, new_motion_1, new_motion_2, new_motion_3))
 
-def add_offset(ee_pos, direction, offset):
+def update_path_single(save_path, new_motion_1):
+    return np.concatenate((save_path, new_motion_1))
+
+def add_offset(ee_pos, direction, offset, previous_point=None, index=None):
     if direction == "top":
         ee_pos[2] = float(ee_pos[2]) + offset
 
@@ -433,7 +390,20 @@ def add_offset(ee_pos, direction, offset):
 
     if direction == "left":
         ee_pos[0] = float(ee_pos[0]) - offset
-
+        # if previous_point is not None:
+        #     print("BACK FOOT POS: {}".format(previous_point))
+        #     ee_pos[2] = previous_point[2][0]
+            # ee_pos[1] = previous_point[1]
+        # if index == 3:
+        #     ee_pos[2] = 1
+        # if index == 4:
+        #     ee_pos[2] = 1
+        if index == 5:
+            print("\n\nIndex 5")
+            print(previous_point)
+            print(ee_pos)
+        # if index == 6:
+        #     ee_pos[2] = 1
     if direction == "right":
         ee_pos[0] = float(ee_pos[0]) + offset
 
