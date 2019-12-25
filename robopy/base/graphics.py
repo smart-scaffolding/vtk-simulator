@@ -4,7 +4,7 @@ import pkg_resources
 import vtk
 import math
 import numpy as np
-
+import random
 
 class VtkPipeline:
     def __init__(self, background=(0.15, 0.15, 0.15), total_time_steps=None, timer_rate=60, gif_file=None):
@@ -321,7 +321,7 @@ def cubeForPath(point):
     prop_assembly.AddPart(cube_actor)
     return prop_assembly
 
-def circleForTrajectory(point, direction):
+def circleForTrajectory(point, direction, index=None):
     colors = vtk.vtkNamedColors()
     prop_assembly = vtk.vtkPropAssembly()
 
@@ -342,6 +342,8 @@ def circleForTrajectory(point, direction):
     circle_actor = vtk.vtkActor()
     circle_actor.SetMapper(circle_mapper)
     circle_actor.GetProperty().SetColor(colors.GetColor3ub('Red')) #Color red
+    if index == 0:
+        circle_actor.GetProperty().SetColor(colors.GetColor3ub('Blue'))
 
     prop_assembly = vtk.vtkPropAssembly()
     prop_assembly.AddPart(circle_actor)
@@ -366,11 +368,63 @@ def MakeAxesActor(scale, xyzLabels):
     axes.GetZAxisCaptionActor2D().GetCaptionTextProperty().ShallowCopy(tprop)
     return axes
 
+def setup_structure_display(blueprint, sort=None):
+    """
+    Internal function to initialise vtk objects.
+    :return: reader_list, actor_list, mapper_list
+    """
+    # reader_list = np.zeros(self.blueprint.size)
+    # actor_list = np.zeros(self.blueprint.size)
+    # print("Actor List: {}".format(actor_list))
+    #
+    # mapper_list = np.zeros(self.blueprint.size)
+    # for i in range(len(self.stl_files)):
+
+    actors = []
+    # if sort is not None:
+    #     blueprint = sort(blueprint)
+    print(blueprint.shape)
+    for division_index in range(blueprint.shape[1]):
+        division = blueprint[:, division_index]
+    #     for j in range(len(blueprint[0])):
+    #         for k in range(len(blueprint[0][0])):
+        for block in division:
+                if(block.hasBlock):
+                    reader_list = vtk.vtkSTLReader()
+                    loc = pkg_resources.resource_filename("robopy", '/'.join(('media', 'inchworm', "block.stl")))
+                    # print(loc)
+                    reader_list.SetFileName(loc)
+                    mapper_list = vtk.vtkPolyDataMapper()
+                    mapper_list.SetInputConnection(reader_list.GetOutputPort())
+                    actor_list = vtk.vtkActor()
+                    actor_list.SetMapper(mapper_list)
+                    # color_index = random.randint(1, 3)
+                    # if i == 0 or j == 0 or k == 0 or i ==(len(blueprint-1)) or j ==(len(blueprint[
+                    #                                                                              0]-1)) or k ==(
+                    #         len(blueprint[0][0]-1)):
+                    #     color_index = 1
+                    # if color_index == 1:
+                    #     color = vtk_named_colors(["DarkGreen"])
+                    # elif color_index == 2:
+                    #     color = vtk_named_colors(["Red"])
+                    # else:
+                    color = vtk_named_colors(["DarkGreen"])
+                    #
+                    actor_list.GetProperty().SetColor(color[0])  # (R,G,B)
+                    actor_list.SetScale(0.013)
+                    actor_list.SetPosition(block.position)
+                    # print("SCALE: {}".format(actor_list.GetScale()))
+                    # print("POSITION: {}".format(actor_list.GetPosition()))
+                    actors.append(actor_list)
+    return actors
+
 class AnimationUpdate:
-    def __init__(self, robot, robot_base, index, direction, trajectory, path):
+    def __init__(self, robot, robot_base, index, direction, trajectory, path, placedObstacle=False, obstacle=None):
         self.robot = robot
         self.robot_base = robot_base
         self.index = index
         self.direction = direction
         self.trajectory = trajectory
         self.path = path
+        self.placedObstacle = placedObstacle
+        self.obstacle = obstacle

@@ -41,8 +41,8 @@ class Puma560(SerialLink):
 
         super().__init__(links=links, base=base, name='puma_560', stl_files=file_names, colors=colors, param=param)
 
-class Puma560_TEST(SerialLink):
-    def __init__(self, base=None, blueprint=None):
+class Inchworm(SerialLink):
+    def __init__(self, base=None, blueprint=None, port=None, baud=9600):
 
         # self.qn = np.matrix([[0, pi / 4, pi, 0, pi / 4, 0]])
         # self.qr = np.matrix([[0, pi / 2, -pi / 2, 0, 0, 0]])
@@ -77,7 +77,8 @@ class Puma560_TEST(SerialLink):
         colors = graphics.vtk_named_colors(["Red", "Blue", "Blue", "Purple"])
 
 
-        super().__init__(links=links, base=base, name='puma_560_TEST', stl_files=file_names, colors=colors, param=param, blueprint=blueprint)
+        super().__init__(links=links, base=base, name='inchworm', stl_files=file_names, colors=colors, param=param,
+                         blueprint=blueprint, port=port, baud=baud)
 
 
 class Orion5(SerialLink):

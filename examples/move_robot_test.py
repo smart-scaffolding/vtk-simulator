@@ -10,20 +10,11 @@ import time
 accuracy = 1e-7
 threshold = 1
 # num_way_points = 2
-use_face_star = False
+use_face_star = True
+animate = True
+move_both_end_effectors=True
 
 def main():
-    blueprint = np.array([
-        [[1, 0, 0], [1, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [1, 1, 1]],
-        [[1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0], [0, 0, 0], [0, 0, 0]],
-        [[1, 0, 0], [1, 1, 0], [0, 0, 0], [1, 0, 0], [0, 0, 0], [0, 0, 0]],
-        [[1, 0, 0], [1, 0, 0], [0, 0, 0], [1, 0, 0], [0, 0, 0], [0, 0, 0]],
-        [[1, 1, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-        [[1, 1, 1], [0, 0, 0], [1, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-        [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-        [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]
-    ])
-
 
     #playground
     blueprint = np.array([
@@ -35,85 +26,38 @@ def main():
         [[1, 0, 0, 0], [1, 1, 1, 1], [1, 1, 1, 1]],
     ])
 
-    #modified playground
-    # blueprint = np.array([
-    #     [[1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0]],
-    #     [[1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0]],
-    #     [[1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0]],
-    #     [[1, 0, 0, 0, 0, 0, 0], [1, 1, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1]],
-    #     [[1, 0, 0, 0, 0, 0, 0], [1, 1, 1, 0, 0, 0, 0], [1, 1, 1, 1, 0, 0, 0]],
-    #     [[1, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 0, 0, 0], [1, 1, 1, 1, 0, 0, 0]],
-    # ])
 
-    # top of stairs
-    # base = np.matrix([[1, 0, 0, 5.5],
-    #                    [0, 1, 0, 2.5],
-    #                    [0, 0, 1, 4.],
-    #                    [0, 0, 0, 1]])
+    robot = model.Inchworm(base=np.matrix([[1, 0, 0, 0.5],
+                                               [0, 1, 0, 1.5],
+                                               [0, 0, 1, 1.],
+                                               [0, 0, 0, 1]]), blueprint=blueprint)
 
-    base = np.matrix([[1, 0, 0, 0.5],
-                      [0, 1, 0, 0.5],
-                      [0, 0, 1, 1.],
-                      [0, 0, 0, 1]])
-    # base = tr.trotz(180, unit="deg", xyz=[4.5, 2.5, 4])
-    # robot = model.Puma560_TEST(base=np.matrix([[1, 0, 0, 0.5],
-    #                                           [0, 1, 0, 1.5],
-    #                                           [0, 0, 1, 1],
-    #                                           [0, 0, 0, 1]]), blueprint=blueprint)
-    robot = model.Inchworm(base=base, blueprint=blueprint)
+    num_steps = 40
 
-    num_steps = 20
-
+    # robot.update_angles(np.array([0, 1.08030020e+00,  -2.16060041e+00, -4.89677758e-01])*180/np.pi)
     # startFace = BlockFace(1, 0, 0, 'top')
-    startFace = BlockFace(5, 1, 3, 'top')
-    # endFace = BlockFace(5, 2, 3, 'top')
+    startFace = BlockFace(1, 1, 0, 'top')
+    # endFace = BlockFace(3, 0, 0, 'top')
     # endFace = BlockFace(5, 1, 3, 'top')
     # endFace = BlockFace(5, 0, 0, 'top')
     # endFace = BlockFace(3, 2, 6, "top")
-    # endFace = BlockFace(3, 2, 3, "top")
+    endFace = BlockFace(5, 1, 3, "top")
     # endFace= BlockFace(3, 2, 5, "left")
-    endFace = BlockFace(1, 0, 0, 'top')
+    # endFace = BlockFace(5, 0, 0, 'top')
 
-    # (2, 1, 0, 'top'), (3, 1, 0, 'top'), (4, 1, 0, 'top'), (5, 1, 1, 'top'), (6, 1, 2, 'top'), (6, 2, 3, 'top')]
-    # ik_motion = None
-    # path = None
-    # directions = None
-    # animation_update = []
 
-    # goals = [(BlockFace(1, 0, 0, 'top'), BlockFace(5, 0, 0, 'top')), (BlockFace(5, 0, 0, 'top'), BlockFace(0, 0, 0,
-    #                                                                                                      'top'))]
-    # for index, goal in enumerate(goals):
-    #     startFace = goal[0]
-    #     endFace = goal[1]
 
     ik_motion, path, directions, animation_update = follow_path(robot, num_steps, offset=1,
                                                                          startFace=startFace,
                                                                     endFace=endFace, blueprint=blueprint,
-                                                                                )
 
-        # if ik_motion is None:
-        #     ik_motion = ik_motion_inst
-        # else:
-        #     ik_motion = np.concatenate((ik_motion, ik_motion_inst))
-        #
-        # if path is None:
-        #     path = path_inst
-        # else:
-        #     path.append(path_inst)
-        #     path = np.asarray(path).flatten().tolist()
-        # if directions is None:
-        #     directions = directions_inst
-        # else:
-        #     directions.append(directions_inst)
-        # if animation_update is None:
-        #     animation_update = animation_update
-        # else:
-        #     animation_update.append(animation_update_inst)
-
-
-
-
-    robot = model.Inchworm(base=base, blueprint=blueprint)
+                                                                         )
+    port='/dev/cu.usbmodem14201'
+    # port = None
+    robot = model.Inchworm(base=np.matrix([[1, 0, 0, 0.5],
+                                               [0, 1, 0, 1.5],
+                                               [0, 0, 1, 1.],
+                                               [0, 0, 0, 1]]), blueprint=blueprint, port=port)
 
 
     print("Path Length: {}".format(len(path[0][1:][0])))
@@ -137,7 +81,34 @@ def main():
 
     print("Robot Orientation: {}".format(robot_orientation))
 
-    robot.animate(stances=ik_motion, frame_rate=30, unit='deg', num_steps=num_steps*3, orientation=robot_orientation,
+
+    print("Final Angle: {}".format(ik_motion[-1]))
+    flip_angles=True
+    for index, angle in enumerate(ik_motion):
+        print(angle)
+        angle = angle.tolist()[0]
+        if index % (num_steps) == 0:
+            print("\nFIRST POINT REACHED")
+
+        if index % (num_steps * 2) == 0:
+            print("\n SECOND STEP REACHED")
+        if index % (num_steps*3) == 0:
+            print("\n THIRD STEP REACHED")
+            flip_angles = True if flip_angles == False else False
+            print("\n\nIndex: {}  New Flipping Angle: {}".format(index, flip_angles))
+
+        if flip_angles:
+            temp = angle[1]
+            angle[1] = 180 / 2 + angle[3]
+            angle[3] = temp - 180 / 2
+
+        robot.send_to_robot(angle, 0.25)
+        # robot.plot(angle, unit="deg")
+
+
+    if animate:
+
+        robot.animate(stances=ik_motion, frame_rate=30, unit='deg', num_steps=num_steps*3, orientation=robot_orientation,
                   showPath=True, showPlacedBlock=True, update=animation_update)
 
 def move_to_point(direction, point, robot, num_steps, previous_angles=None, flip_angles=False, accuracy=accuracy):
@@ -193,10 +164,7 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint, secondP
 
     # path = [(2.49, 2.49, 1.3, "top"), (0.49, 2.49, 1.3, "top"),(2, 2.49, 2.5, "left")]
     if not use_face_star:
-        # path = [(1, 2, 0, "top"), (0, 2, 0, "top"), (3, 2, 3, "left"), (3, 2, 2, "left"), (3, 2, 5, "left"), (3, 2,
-        #                                                                                                       4,
-        #                                                                                                       "left"), (3, 2, 6, "left"), (3, 2, 5, "left") ]
-        path = [(1, 2, 0, "top"), (0, 2, 0, "top"), (3, 2, 3, "left"), (3, 2, 2, "left"), (2, 2, 2, "top"),]
+        path = [(1, 2, 0, "top"), (0, 2, 0, "top"), (3, 2, 3, "left"), (3, 2, 2, "left"), (3, 2, 5, "left"), (3, 2, 4, "left") ]
     armReach = [2.38, 1.58]
 
     # armReach = [1.5, 1.5]
@@ -212,7 +180,7 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint, secondP
     global_path = []
     global_path.append((num_steps, path))
 
-    if use_face_star:
+    if use_face_star and move_both_end_effectors:
         filtered_path = []
         for index, point in enumerate(path):
             filtered_path.append(point)
@@ -220,12 +188,14 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint, secondP
                 # if secondPosition == 0:
                 #     filtered_path.append((0, 0, 0, "top"))
                 # else:
-                filtered_path.append((create_point_from_homogeneous_transform(robot.base), "top"))
+                filtered_path.append((0, 1, 0, "top"))
             else:
                 filtered_path.append(path[index-1])
 
         path = filtered_path
-        print("NEW PATH: {}".format(path))
+
+    if not move_both_end_effectors:
+        path.pop(0)
 
     global_direction = []
 
@@ -253,7 +223,7 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint, secondP
             point[1] = item[1] + 0.5
             point[2] = item[2] + 1
         if direction == "left" or direction =="right":
-            point[0] = item[0] - 1.37  #-1.37
+            point[0] = item[0] - 1.37 #-1.37
             point[1] = item[1] + 0.5
             point[2] = item[2] - 0.87 #-.87
         if direction == "front" or direction =="back":
@@ -358,21 +328,7 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint, secondP
 
 
             # TODO: FIX TO ACCEPT ANY ORIENTATION, NOT JUST +Z
-            if update_animation is not None:
-                flatten = lambda l: [item for sublist in l for item in sublist]
-                base_up = create_point_from_homogeneous_transform(update_animation[-1].robot_base).tolist()
-                base_up = flatten(base_up)
-
-                # if path[index - 1][-1] == path[index][-1]:
-                #     new_direction = path[index][-1]
-                # else:
-                #     new_direction = path[index - 1][-1]
-
-                ee_up = add_offset(base_up,
-                                   previous_direction, offset, path[index - 2][-1],
-                                   index=index, type="ee_up")
-            else:
-                ee_up = add_offset(ee_up, previous_direction, offset, previous_point, index=index)
+            ee_up = add_offset(ee_up, previous_direction, offset, previous_point, index=index)
 
             stop_above = np.copy(point)
 
@@ -448,13 +404,9 @@ def update_path(save_path, new_motion_1, new_motion_2, new_motion_3):
 def update_path_single(save_path, new_motion_1):
     return np.concatenate((save_path, new_motion_1))
 
-def add_offset(ee_pos, direction, offset, previous_direction=None, index=None, type=None):
-
-    if direction == "top" or previous_direction == "top":
-        if type == "ee_up":
-            ee_pos[2] = float(ee_pos[2]) + (offset*0.5)
-        else:
-            ee_pos[2] = float(ee_pos[2]) + offset
+def add_offset(ee_pos, direction, offset, previous_point=None, index=None):
+    if direction == "top":
+        ee_pos[2] = float(ee_pos[2]) + offset
 
     if direction == "bottom":
         ee_pos[2] = float(ee_pos[2]) - offset
@@ -466,11 +418,8 @@ def add_offset(ee_pos, direction, offset, previous_direction=None, index=None, t
         ee_pos[1] = float(ee_pos[1]) + offset
 
     if direction == "left":
-        if type == "ee_up" and previous_direction == "left":
-            ee_pos[0] = float(ee_pos[0]) - (offset*2)
-            ee_pos[2] = ee_pos[2] - 1.37
-        else:
-            ee_pos[0] = float(ee_pos[0]) - (offset*0.5)
+        ee_pos[0] = float(ee_pos[0]) - offset
+        # ee_pos[2] = ee_pos[2] - 0.5
         # if previous_point is not None:
         #     print("BACK FOOT POS: {}".format(previous_point))
         #     ee_pos[2] = previous_point[2][0]

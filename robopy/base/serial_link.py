@@ -19,13 +19,17 @@ from scipy.optimize import minimize
 import robopy.base.transforms as tr
 from .common import *
 from scipy.spatial.transform import Rotation as R
+from serial import Serial, PARITY_NONE, STOPBITS_ONE, EIGHTBITS
+import time
+import random
 
 class SerialLink:
     """
     SerialLink object class.
     """
 
-    def __init__(self, links, name=None, base=None, tool=None, stl_files=None, q=None, colors=None, param=None, blueprint=None):
+    def __init__(self, links, name=None, base=None, tool=None, stl_files=None, q=None, colors=None, param=None,
+                 blueprint=None, port=None, baud=9600):
         """
         Creates a SerialLink object.
         :param links: a list of links that will constitute SerialLink object.
@@ -80,6 +84,13 @@ class SerialLink:
             self.blueprint = blueprint
 
         self.scale = .013
+        if port is not None:
+            self.serial = Serial(port=port, baudrate=baud, parity=PARITY_NONE,
+                                    stopbits=STOPBITS_ONE, bytesize=EIGHTBITS, timeout=3.0)
+        else:
+            self.serial = None
+
+    time.sleep(2)
 
     def __iter__(self):
         return (each for each in self.links)
@@ -240,7 +251,63 @@ class SerialLink:
         # return len(self.links)
         return 4
 
-    def fkine(self, stance, unit='rad', apply_stance=False, actor_list=None, timer=None, num_steps=0, num_links=4, directions=None, orientation=None):
+    def send_to_robot(self, angle, delay=2.0, open_gripper=False):
+        """
+        NOTE: Expects all angles to be in degrees
+        Sends a single angle to robot and then delays for a certain amount of time
+
+        :param angle: Expects angles in degrees
+        :param delay: delay after sending to robot
+        """
+        targetAngles = self.map_angles_to_robot(angle, open_gripper)
+        self.serial.write(targetAngles)
+        time.sleep(delay)
+
+
+    def map_angles_to_robot(self, q, open_gripper=False):
+        """
+        Creates a mapping between the angles used by the higher level code and the actual robot angles
+
+        :param q: Input angle, expects angles in degrees
+        :return:
+        """
+
+        qTemp = np.array([q[0], 90 - q[1], q[2]*-1, q[3]*-1])
+        # qTemp = qTemp * 180.0 / np.pi  # convert to degrees
+        print("Final Angles: {}".format(qTemp[1:]))
+
+        gripper = "0002"
+        if open_gripper:
+            gripper = "0002"
+
+        targetAngles = str(int(qTemp[1])).zfill(4) + str(int(qTemp[2])).zfill(4) + str(int(qTemp[3])).zfill(4) + gripper
+        return str.encode(targetAngles)
+
+
+    def gripper_control_commands(self, engage_gripper, disengage_gripper, flip_pid, toggle_gripper):
+
+        if engage_gripper:
+            gripper_control = "0"
+        elif disengage_gripper:
+            gripper_control = "1"
+        else:
+            gripper_control = "2"  # stop gripper (idle)
+
+        pid = "1" if flip_pid else "0"
+        select_gripper = "0"
+        if toggle_gripper:
+            if select_gripper == "0":
+                select_gripper = "1"
+            else:
+                select_gripper = "0"
+
+        return "0" + pid + select_gripper + gripper_control
+
+
+
+
+    def fkine(self, stance, unit='rad', apply_stance=False, actor_list=None, timer=None, num_steps=0, num_links=4,
+              directions=None, orientation=None, update=None):
         """
         Calculates forward kinematics for a list of joint angles.
         :param stance: stance is list of joint angles.
@@ -251,32 +318,37 @@ class SerialLink:
         :return: homogeneous transformation matrix.
         """
 
-        flipped=False
+        # flipped=False
 
+        if apply_stance and update is None:
+            raise Exception("Must have data to update with")
         if type(stance) is np.ndarray:
             stance = np.asmatrix(stance)
         if unit == 'deg':
             stance = stance * pi / 180
         if timer is None:
             timer = 0
-        if num_steps > 0 and timer % num_steps == 0:
-            # if timer - num_steps == 0:
-            ee_pos = round_end_effector_position(self.end_effector_position().tolist()[0], "top", None)
+        # if num_steps > 0 and timer % num_steps == 0:
+        #         #     # if timer - num_steps == 0:
+        #         #     ee_pos = round_end_effector_position(self.end_effector_position().tolist()[0], "top", None)
+        #         #
+        #         #
+        #         #     index = (timer/num_steps)
+        #         #     if index % 2 == 0:
+        #         #
+        #         #         new_base = flip_base(ee_pos, orientation[int(index)], 0, animation=True)
+        #         #
+        #         #         flipped=False
+        #         #     else:
+        #         #         new_base = flip_base(ee_pos, orientation[int(index)], 180, animation=True)
+        #         #
+        #         #         flipped=True
+        #         #
+        #         #     # print("EE_POS: {}".format(ee_pos))
+        #         #     self.base = new_base
 
-
-            index = (timer/num_steps)
-            if index % 2 == 0:
-
-                new_base = flip_base(ee_pos, orientation[int(index)], 0, animation=True)
-
-                flipped=False
-            else:
-                new_base = flip_base(ee_pos, orientation[int(index)], 180, animation=True)
-
-                flipped=True
-
-            # print("EE_POS: {}".format(ee_pos))
-            self.base = new_base
+        if apply_stance:
+            self.base = update.robot_base
         if stance is None:
             t = self.links[0].transform_matrix
         else:
@@ -480,7 +552,7 @@ class SerialLink:
             return np.asmatrix(sol.x)
 
 
-    def plot(self, stance, unit='rad'):
+    def plot(self, stance, update, unit='rad'):
         """
         Plots the SerialLink object in a desired stance.
         :param stance: list of joint angles for SerialLink object.
@@ -497,7 +569,7 @@ class SerialLink:
         self.pipeline.reader_list, self.pipeline.actor_list, self.pipeline.mapper_list = self.__setup_pipeline_objs()
 
         # print("LENGHT OF ACTOR LIST: {}".format(len(self.pipeline.actor_list)))
-        self.fkine(stance, apply_stance=True, actor_list=self.pipeline.actor_list)
+        self.fkine(stance, apply_stance=True, actor_list=self.pipeline.actor_list, update=update)
 
         self.update_angles(stance.tolist()[0])
 
@@ -581,7 +653,17 @@ class SerialLink:
                         mapper_list.SetInputConnection(reader_list.GetOutputPort())
                         actor_list = vtk.vtkActor()
                         actor_list.SetMapper(mapper_list)
-                        color = vtk_named_colors(["DarkGreen"])
+                        color_index = random.randint(1, 3)
+                        if i == 0 or j == 0 or k == 0 or i ==(len(self.blueprint-1)) or j ==(len(self.blueprint[
+                                                                                                     0]-1)) or k ==(
+                                len(self.blueprint[0][0]-1)):
+                            color_index = 1
+                        if color_index == 1:
+                            color = vtk_named_colors(["DarkGreen"])
+                        elif color_index == 2:
+                            color = vtk_named_colors(["Red"])
+                        else:
+                            color = vtk_named_colors(["LightGreen"])
 
                         actor_list.GetProperty().SetColor(color[0])  # (R,G,B)
                         actor_list.SetScale(0.013)
@@ -623,7 +705,8 @@ class SerialLink:
 
         return file_names
 
-    def animate(self, stances, unit='rad', frame_rate=25, gif=None, num_steps=None,obstacles=None, directions=None, orientation=None, showPath=True, showPlacedBlock=True, showTrajectory=True,  update=None):
+    def animate(self, stances, unit='rad', frame_rate=25, gif=None, num_steps=None, orientation=None, showPath=True,
+                showPlacedBlock=True, showTrajectory=True,  update=None):
         """
         Animates SerialLink object over nx6 dimensional input matrix, with each row representing list of 6 joint angles.
         :param stances: nx6 dimensional input matrix.
@@ -640,7 +723,7 @@ class SerialLink:
         # print(stances.shape)
         self.pipeline = VtkPipeline(total_time_steps=stances.shape[0] - 1, gif_file=gif)
         self.pipeline.reader_list, self.pipeline.actor_list, self.pipeline.mapper_list = self.__setup_pipeline_objs()
-        self.fkine(stances, apply_stance=True, actor_list=self.pipeline.actor_list, directions=None)
+        self.fkine(stances, apply_stance=True, actor_list=self.pipeline.actor_list, directions=None, update=update[0])
         self.update_angles(stances.tolist()[0])
 
         # print(self.get_current_joint_config(unit='deg'))
@@ -658,24 +741,26 @@ class SerialLink:
         previous_path = []
 
         def execute(obj, event):
-            nonlocal stances, obstacles, previous_point
+            nonlocal stances, previous_point
             self.pipeline.timer_tick()
-            self.fkine(stances, apply_stance=True, actor_list=self.pipeline.actor_list, timer=self.pipeline.timer_count, num_steps=num_steps, directions=None, orientation=orientation)
-            self.update_angles(stances[self.pipeline.timer_count].tolist()[0])
             timer = self.pipeline.timer_count
             index = (timer / num_steps)
-            if obstacles is not None and showPlacedBlock:
-                for i in obstacles:
-                    # print(i)
-                    # print(self.pipeline.timer_count)
-                    if i[0] == self.pipeline.timer_count:
-                        # print("Adding actor")
-                        self._add_block(i[1])
-                        self.pipeline.animate()
 
+            self.fkine(stances, apply_stance=True, actor_list=self.pipeline.actor_list, timer=self.pipeline.timer_count,
+                       num_steps=num_steps, orientation=orientation, update=update[int(index)])
+
+            self.update_angles(stances[self.pipeline.timer_count].tolist()[0])
+            # timer = self.pipeline.timer_count
+            # index = (timer / num_steps)
+
+            # if index == 3:
+            #     for i in range(4):
+            #         self.pipeline.actor_list[i].GetProperty().SetColor(0, 0, 1)
             if update is not None:
                 for animation_update in update:
                     if animation_update.index == index:
+                        if animation_update.placedObstacle and showPlacedBlock:
+                            self._add_block(animation_update.obstacle)
                         if showPath:
                             for i in previous_path:
                                 self.pipeline.remove_actor(i)
@@ -689,9 +774,10 @@ class SerialLink:
                                 self.pipeline.remove_actor(i)
                                 previous_point.remove(i)
 
-                            for point in animation_update.trajectory:
+                            for index, point in enumerate(animation_update.trajectory):
 
-                                previous_point.append(self.pipeline.add_actor(circleForTrajectory(point, animation_update.direction)))
+                                previous_point.append(self.pipeline.add_actor(circleForTrajectory(point,
+                                                                                                  animation_update.direction,index=index)))
                         self.pipeline.animate()
 
 
