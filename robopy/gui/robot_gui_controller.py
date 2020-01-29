@@ -2,7 +2,7 @@ import robopy.base.model as model
 import numpy as np
 import robopy.base.transforms as tr
 import math
-from robopy.base.FaceStar import *
+from robopy.base.FaceStar import FaceStar, BlockFace
 from robopy.base.common import create_point_from_homogeneous_transform, flip_base, round_end_effector_position
 from robopy.base.graphics import AnimationUpdate
 import time
@@ -11,107 +11,19 @@ accuracy = 1e-7
 threshold = 1
 # num_way_points = 2
 use_face_star = False
+use_serial = False
 
-def main():
-    blueprint = np.array([
-        [[1, 0, 0], [1, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [1, 1, 1]],
-        [[1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0], [0, 0, 0], [0, 0, 0]],
-        [[1, 0, 0], [1, 1, 0], [0, 0, 0], [1, 0, 0], [0, 0, 0], [0, 0, 0]],
-        [[1, 0, 0], [1, 0, 0], [0, 0, 0], [1, 0, 0], [0, 0, 0], [0, 0, 0]],
-        [[1, 1, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-        [[1, 1, 1], [0, 0, 0], [1, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-        [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-        [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]
-    ])
+def robot_simulation(blueprint, base, num_steps, startFace, endFace):
+    startFace = BlockFace(*startFace)
+    endFace = BlockFace(*endFace)
 
-
-    #playground
-    blueprint = np.array([
-        [[1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]],
-        [[1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]],
-        [[1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]],
-        [[1, 0, 0, 0], [1, 1, 0, 0], [1, 1, 1, 1]],
-        [[1, 0, 0, 0], [1, 1, 1, 0], [1, 1, 1, 1]],
-        [[1, 0, 0, 0], [1, 1, 1, 1], [1, 1, 1, 1]],
-    ])
-
-    #modified playground
-    # blueprint = np.array([
-    #     [[1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0]],
-    #     [[1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0]],
-    #     [[1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0]],
-    #     [[1, 0, 0, 0, 0, 0, 0], [1, 1, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1]],
-    #     [[1, 0, 0, 0, 0, 0, 0], [1, 1, 1, 0, 0, 0, 0], [1, 1, 1, 1, 0, 0, 0]],
-    #     [[1, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 0, 0, 0], [1, 1, 1, 1, 0, 0, 0]],
-    # ])
-
-    # top of stairs
-    # base = np.matrix([[1, 0, 0, 5.5],
-    #                    [0, 1, 0, 2.5],
-    #                    [0, 0, 1, 4.],
-    #                    [0, 0, 0, 1]])
-
-    base = np.matrix([[1, 0, 0, 0.5],
-                      [0, 1, 0, 0.5],
-                      [0, 0, 1, 1.],
-                      [0, 0, 0, 1]])
-    # base = tr.trotz(180, unit="deg", xyz=[4.5, 2.5, 4])
-    # robot = model.Puma560_TEST(base=np.matrix([[1, 0, 0, 0.5],
-    #                                           [0, 1, 0, 1.5],
-    #                                           [0, 0, 1, 1],
-    #                                           [0, 0, 0, 1]]), blueprint=blueprint)
     robot = model.Inchworm(base=base, blueprint=blueprint)
 
-    num_steps = 20
-
-    startFace = BlockFace(1, 0, 0, 'top')
-    # startFace = BlockFace(5, 1, 3, 'top')
-    # endFace = BlockFace(5, 2, 3, 'top')
-    # endFace = BlockFace(5, 1, 3, 'top')
-    endFace = BlockFace(5, 0, 0, 'top')
-    # endFace = BlockFace(3, 2, 6, "top")
-    # endFace = BlockFace(3, 2, 3, "left")
-    # endFace= BlockFace(3, 2, 5, "left")
-    # endFace = BlockFace(1, 0, 0, 'top')
-
-    # (2, 1, 0, 'top'), (3, 1, 0, 'top'), (4, 1, 0, 'top'), (5, 1, 1, 'top'), (6, 1, 2, 'top'), (6, 2, 3, 'top')]
-    # ik_motion = None
-    # path = None
-    # directions = None
-    # animation_update = []
-
-    # goals = [(BlockFace(1, 0, 0, 'top'), BlockFace(5, 0, 0, 'top')), (BlockFace(5, 0, 0, 'top'), BlockFace(0, 0, 0,
-    #                                                                                                      'top'))]
-    # for index, goal in enumerate(goals):
-    #     startFace = goal[0]
-    #     endFace = goal[1]
 
     ik_motion, path, directions, animation_update = follow_path(robot, num_steps, offset=1,
                                                                          startFace=startFace,
                                                                     endFace=endFace, blueprint=blueprint,
                                                                                 )
-
-        # if ik_motion is None:
-        #     ik_motion = ik_motion_inst
-        # else:
-        #     ik_motion = np.concatenate((ik_motion, ik_motion_inst))
-        #
-        # if path is None:
-        #     path = path_inst
-        # else:
-        #     path.append(path_inst)
-        #     path = np.asarray(path).flatten().tolist()
-        # if directions is None:
-        #     directions = directions_inst
-        # else:
-        #     directions.append(directions_inst)
-        # if animation_update is None:
-        #     animation_update = animation_update
-        # else:
-        #     animation_update.append(animation_update_inst)
-
-
-
 
     robot = model.Inchworm(base=base, blueprint=blueprint)
 
@@ -137,8 +49,36 @@ def main():
 
     print("Robot Orientation: {}".format(robot_orientation))
 
-    robot.animate(stances=ik_motion, frame_rate=30, unit='deg', num_steps=num_steps*3, orientation=robot_orientation,
-                  showPath=True, showPlacedBlock=True, update=animation_update)
+    flip_angles = True
+    angles = []
+    for index, angle in enumerate(ik_motion):
+        # print(f"Angle: {angle}")
+
+        angle = angle.tolist()[0]
+        # robot.map_angles_to_robot(angle)
+        if index % (num_steps) == 0:
+            print("\nFIRST POINT REACHED")
+
+        if index % (num_steps * 2) == 0:
+            print("\n SECOND STEP REACHED")
+        if index % (num_steps * 3) == 0:
+            print("\n THIRD STEP REACHED")
+            flip_angles = True if flip_angles == False else False
+            print("\n\nIndex: {}  New Flipping Angle: {}".format(index, flip_angles))
+
+        if flip_angles:
+            temp = angle[1]
+            angle[1] = 180 / 2 + angle[3]
+            angle[3] = temp - 180 / 2
+
+        angles.append(angle)
+        if use_serial:
+            robot.send_to_robot(angle, 5)
+
+    # robot.animate(stances=ik_motion, frame_rate=30, unit='deg', num_steps=num_steps*3, orientation=robot_orientation,
+    #               showPath=True, showPlacedBlock=True, update=animation_update)
+
+        return angles
 
 def move_to_point(direction, point, robot, num_steps, previous_angles=None, flip_angles=False, accuracy=accuracy):
     # print(point)
@@ -452,7 +392,7 @@ def add_offset(ee_pos, direction, offset, previous_direction=None, index=None, t
 
     if direction == "top" or previous_direction == "top":
         if type == "ee_up":
-
+            pass
         else:
             ee_pos[2] = float(ee_pos[2]) + offset
 
@@ -494,4 +434,63 @@ def add_offset(ee_pos, direction, offset, previous_direction=None, index=None, t
 
 
 if __name__ == '__main__':
-    main()
+    blueprint = np.array([
+        [[1, 0, 0], [1, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [1, 1, 1]],
+        [[1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0], [0, 0, 0], [0, 0, 0]],
+        [[1, 0, 0], [1, 1, 0], [0, 0, 0], [1, 0, 0], [0, 0, 0], [0, 0, 0]],
+        [[1, 0, 0], [1, 0, 0], [0, 0, 0], [1, 0, 0], [0, 0, 0], [0, 0, 0]],
+        [[1, 1, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+        [[1, 1, 1], [0, 0, 0], [1, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+        [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+        [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]
+    ])
+
+    # playground
+    blueprint = np.array([
+        [[1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]],
+        [[1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]],
+        [[1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]],
+        [[1, 0, 0, 0], [1, 1, 0, 0], [1, 1, 1, 1]],
+        [[1, 0, 0, 0], [1, 1, 1, 0], [1, 1, 1, 1]],
+        [[1, 0, 0, 0], [1, 1, 1, 1], [1, 1, 1, 1]],
+    ])
+
+    # modified playground
+    # blueprint = np.array([
+    #     [[1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0]],
+    #     [[1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0]],
+    #     [[1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0]],
+    #     [[1, 0, 0, 0, 0, 0, 0], [1, 1, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1]],
+    #     [[1, 0, 0, 0, 0, 0, 0], [1, 1, 1, 0, 0, 0, 0], [1, 1, 1, 1, 0, 0, 0]],
+    #     [[1, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 0, 0, 0], [1, 1, 1, 1, 0, 0, 0]],
+    # ])
+
+    # top of stairs
+    # base = np.matrix([[1, 0, 0, 5.5],
+    #                    [0, 1, 0, 2.5],
+    #                    [0, 0, 1, 4.],
+    #                    [0, 0, 0, 1]])
+
+    base = np.matrix([[1, 0, 0, 0.5],
+                      [0, 1, 0, 0.5],
+                      [0, 0, 1, 1.],
+                      [0, 0, 0, 1]])
+    # base = tr.trotz(180, unit="deg", xyz=[4.5, 2.5, 4])
+    # robot = model.Puma560_TEST(base=np.matrix([[1, 0, 0, 0.5],
+    #                                           [0, 1, 0, 1.5],
+    #                                           [0, 0, 1, 1],
+    #                                           [0, 0, 0, 1]]), blueprint=blueprint)
+    robot = model.Inchworm(base=base, blueprint=blueprint)
+
+    num_steps = 20
+
+    startFace = (1, 0, 0, 'top')
+    # startFace = BlockFace(5, 1, 3, 'top')
+    # endFace = BlockFace(5, 2, 3, 'top')
+    # endFace = BlockFace(5, 1, 3, 'top')
+    endFace = (5, 0, 0, 'top')
+    # endFace = BlockFace(3, 2, 6, "top")
+    # endFace = BlockFace(3, 2, 3, "left")
+    # endFace= BlockFace(3, 2, 5, "left")
+    # endFace = BlockFace(1, 0, 0, 'top')
+    robot_simulation(blueprint=blueprint, base=base, num_steps=num_steps, startFace=startFace, endFace=endFace)

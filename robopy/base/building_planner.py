@@ -4,11 +4,16 @@ import numpy as np
 # from .graphics import MakeAxesActor
 # from .graphics import setup_structure_display
 from robopy.base.graphics import *
+from robopy.base.states import DivisionStates
 import time
 import vtk
+import matplotlib.pyplot as plt
+import numpy as np
+from mpl_toolkits.mplot3d import Axes3D
+from itertools import cycle
 
 class BuildingPlanner:
-    def __init__(self, blueprint, time_steps=3000, gif=None):
+    def __init__(self, blueprint, time_steps=3000, gif=None, num_robots=10, threshold=2):
         self.pipeline = VtkPipeline(total_time_steps=time_steps, gif_file=gif)
         self.param = {
             "cube_axes_x_bounds": np.matrix([[0, len(blueprint)]]),
@@ -26,8 +31,8 @@ class BuildingPlanner:
 
         self.pipeline.add_actor(cube_axes)
         self.structure_actors = None
-        self.NUM_ROBOTS = 10
-        self.THRESHOLD = 2
+        self.NUM_ROBOTS = num_robots
+        self.THRESHOLD = threshold
 
     def execute(self, obj, event):
 
@@ -76,6 +81,90 @@ class BuildingPlanner:
         om2.InteractiveOn()
 
         self.pipeline.animate()
+
+    def create_divisions(self):
+        #TODO: Change so does not need to be square
+        x, y, z = self.blueprint.shape
+        colors = np.array([[["DarkGreen"] * z] * y] * x)
+        # if x != y or y != z:
+        #     raise Exception("Structure must be square for the time being")
+
+        vtk_colors = cycle(["(0.0, 0.39215686274509803, 0.0)", "(1.0, 0.0, 0.0)", "(0.0, 0.0, 1.0)", "(1.0, 0.6470588235294118, "
+                                                                                       "0.0)", "(1.0, 1.0, 0.0)"])
+        increment = 4
+        p_zi = 0
+        p_xi = 0
+        p_yi = 0
+        self.divisions = []
+
+        for zi in range(increment, z+increment, increment):
+            for xi in range(increment, x+increment, increment):
+                for yi in range(increment, y+increment, increment):
+                    #create division
+                    if yi + increment > y:
+                        yi = y
+                    if xi + increment > x:
+                        xi = x
+                    if zi + increment > z:
+                        zi = z
+                    d = Division((p_xi, xi), (p_yi, yi), (p_zi, zi))
+                    next_color = next(vtk_colors)
+                    print(vtk_named_colors(next_color)[0])
+                    colors[p_xi:xi, p_yi:yi, p_zi:zi] = next_color
+                    self.divisions.append(d)
+                    # print(yi)
+                    p_yi = yi
+                p_yi = 0
+                p_xi = xi
+            p_yi = 0
+            p_xi = 0
+            p_zi = zi
+
+
+        return self.divisions, colors
+
+    def get_cmap(self, n, name='hsv'):
+        '''Returns a function that maps each index in 0, 1, ..., n-1 to a distinct
+        RGB color; the keyword argument name must be a standard mpl colormap name.'''
+        return plt.cm.get_cmap(name, n)
+
+    def display(self, z_height=None, return_plot=False):
+        x, y, z = self.blueprint.shape
+        self.colors = np.array([[['w']*z]*y]*x)
+        # count = 0
+        cycol = cycle('bgrcmyk')
+        for division in self.divisions:
+            # if count == 0:
+            #     pass
+            # count +=1
+            x_start, x_end = division.x_range
+            y_start, y_end = division.y_range
+            z_start, z_end = division.z_range
+            print(x_start, x_end, y_start, y_end, z_start, z_end)
+            self.colors[x_start:x_end, y_start:y_end, z_start:z_end] = next(cycol)
+
+
+        fig = plt.figure()
+        ax = fig.gca(projection='3d')
+        if z_height is None:
+            display = self.blueprint
+            disp_colors = self.colors
+        else:
+            display = self.blueprint[:, :, :z_height]
+            disp_colors = self.colors[:, :, :z_height]
+        ax.voxels(display,
+                  facecolors=disp_colors,
+                  edgecolors='k'  # brighter
+                  )
+
+        ax.set(xlabel='X', ylabel='Y', zlabel='Z')
+        xlim, ylim, zlim = self.blueprint.shape
+        ax.set_xlim(0, xlim)
+        ax.set_ylim(0, ylim)
+        ax.set_zlim(0, zlim)
+        if return_plot:
+            return plt, ax
+        plt.show()
 
     def divide_structure(self):
 
@@ -239,18 +328,129 @@ class Block:
         self.position = position
         self.hasBlock = hasBlock
 
+class Division:
+    def __init__(self, x_range, y_range, z_range, status=DivisionStates.UNCLAIMED, owner=None, centroid=None):
+        self.x_range = x_range
+        self.y_range = y_range
+        self.z_range = z_range
+        self.status = status
+        self.owner = owner
+        self.centroid = self.calculate_centroid() if centroid is None else centroid
+        self.area = self.area()
+
+    def change_status(self, new_status):
+        self.status = new_status
+
+    def claim(self, owner):
+        self.owner = owner
+
+    def calculate_centroid(self):
+        x = (self.x_range[0] + self.x_range[1])/2
+        y = (self.y_range[0] + self.y_range[1]) / 2
+        z = (self.z_range[0] + self.z_range[1]) / 2
+        return (x, y, z)
+
+    def area(self):
+        x_start, x_end = self.x_range
+        y_start, y_end = self.y_range
+        z_start, z_end = self.z_range
+
+        x = x_end-x_start
+        y = y_end-y_start
+        z = z_end-z_start
+
+        return x*y*z
+
+
+    def __add__(self, other):
+        x = self.x_range + other.x_range
+        y = self.y_range + other.y_range
+        z = self.z_range + other.z_range
+
+        return Division(x, y, z, self.status, self.owner, self.centroid)
+
 if __name__ == '__main__':
+    # blueprint = np.array([
+    #     [[1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]],
+    #     [[1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]],
+    #     [[1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]],
+    #     [[1, 0, 0, 0], [1, 1, 0, 0], [1, 1, 1, 1]],
+    #     [[1, 0, 0, 0], [1, 1, 1, 0], [1, 1, 1, 1]],
+    #     [[1, 0, 0, 0], [1, 1, 1, 1], [1, 1, 1, 1]],
+    # ])
     blueprint = np.array([
-        [[1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]],
-        [[1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]],
-        [[1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]],
-        [[1, 0, 0, 0], [1, 1, 0, 0], [1, 1, 1, 1]],
-        [[1, 0, 0, 0], [1, 1, 1, 0], [1, 1, 1, 1]],
-        [[1, 0, 0, 0], [1, 1, 1, 1], [1, 1, 1, 1]],
-    ])
-    blueprint = np.array([
-        [[1]*1]*30,
-    ]*20)
+        [[1]*9]*9,
+    ]*9)
+
+    # blueprint = np.array([[[1, 1, 1, 1, 1, 1, 1, 1],
+    #     [0, 1, 1, 1, 1, 1, 1, 1],
+    #     [0, 1, 1, 1, 1, 1, 1, 1],
+    #     [0, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1]],
+    #    [[1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [0, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 0, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 0, 1, 1, 1, 1, 1]],
+    #    [[1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1]],
+    #    [[1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1]],
+    #    [[1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1]],
+    #    [[1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1]],
+    #    [[1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1]],
+    #    [[1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [0, 0, 1, 1, 0, 1, 1, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 1],
+    #     [0, 0, 0, 0, 0, 1, 1, 1]]])
     buildingPlanner = BuildingPlanner(blueprint)
-    buildingPlanner.show_structure()
+    # buildingPlanner.show_structure()
     # spiral_sort(blueprint)
+    # buildingPlanner.structure
+    divisions, colors = buildingPlanner.create_divisions()
+    print(repr(colors))
+    print(len(divisions))
+    buildingPlanner.display()

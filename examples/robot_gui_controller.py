@@ -12,106 +12,17 @@ threshold = 1
 # num_way_points = 2
 use_face_star = False
 
-def main():
-    blueprint = np.array([
-        [[1, 0, 0], [1, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [1, 1, 1]],
-        [[1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0], [0, 0, 0], [0, 0, 0]],
-        [[1, 0, 0], [1, 1, 0], [0, 0, 0], [1, 0, 0], [0, 0, 0], [0, 0, 0]],
-        [[1, 0, 0], [1, 0, 0], [0, 0, 0], [1, 0, 0], [0, 0, 0], [0, 0, 0]],
-        [[1, 1, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-        [[1, 1, 1], [0, 0, 0], [1, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-        [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-        [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]
-    ])
+def robot_simulation(blueprint, base, num_steps, startFace, endFace):
+    startFace = BlockFace(*startFace)
+    endFace = BlockFace(*endFace)
 
-
-    #playground
-    blueprint = np.array([
-        [[1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]],
-        [[1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]],
-        [[1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]],
-        [[1, 0, 0, 0], [1, 1, 0, 0], [1, 1, 1, 1]],
-        [[1, 0, 0, 0], [1, 1, 1, 0], [1, 1, 1, 1]],
-        [[1, 0, 0, 0], [1, 1, 1, 1], [1, 1, 1, 1]],
-    ])
-
-    #modified playground
-    # blueprint = np.array([
-    #     [[1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0]],
-    #     [[1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0]],
-    #     [[1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0]],
-    #     [[1, 0, 0, 0, 0, 0, 0], [1, 1, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1]],
-    #     [[1, 0, 0, 0, 0, 0, 0], [1, 1, 1, 0, 0, 0, 0], [1, 1, 1, 1, 0, 0, 0]],
-    #     [[1, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 0, 0, 0], [1, 1, 1, 1, 0, 0, 0]],
-    # ])
-
-    # top of stairs
-    # base = np.matrix([[1, 0, 0, 5.5],
-    #                    [0, 1, 0, 2.5],
-    #                    [0, 0, 1, 4.],
-    #                    [0, 0, 0, 1]])
-
-    base = np.matrix([[1, 0, 0, 0.5],
-                      [0, 1, 0, 0.5],
-                      [0, 0, 1, 1.],
-                      [0, 0, 0, 1]])
-    # base = tr.trotz(180, unit="deg", xyz=[4.5, 2.5, 4])
-    # robot = model.Puma560_TEST(base=np.matrix([[1, 0, 0, 0.5],
-    #                                           [0, 1, 0, 1.5],
-    #                                           [0, 0, 1, 1],
-    #                                           [0, 0, 0, 1]]), blueprint=blueprint)
     robot = model.Inchworm(base=base, blueprint=blueprint)
 
-    num_steps = 20
-
-    startFace = BlockFace(1, 0, 0, 'top')
-    # startFace = BlockFace(5, 1, 3, 'top')
-    # endFace = BlockFace(5, 2, 3, 'top')
-    # endFace = BlockFace(5, 1, 3, 'top')
-    endFace = BlockFace(5, 0, 0, 'top')
-    # endFace = BlockFace(3, 2, 6, "top")
-    # endFace = BlockFace(3, 2, 3, "left")
-    # endFace= BlockFace(3, 2, 5, "left")
-    # endFace = BlockFace(1, 0, 0, 'top')
-
-    # (2, 1, 0, 'top'), (3, 1, 0, 'top'), (4, 1, 0, 'top'), (5, 1, 1, 'top'), (6, 1, 2, 'top'), (6, 2, 3, 'top')]
-    # ik_motion = None
-    # path = None
-    # directions = None
-    # animation_update = []
-
-    # goals = [(BlockFace(1, 0, 0, 'top'), BlockFace(5, 0, 0, 'top')), (BlockFace(5, 0, 0, 'top'), BlockFace(0, 0, 0,
-    #                                                                                                      'top'))]
-    # for index, goal in enumerate(goals):
-    #     startFace = goal[0]
-    #     endFace = goal[1]
 
     ik_motion, path, directions, animation_update = follow_path(robot, num_steps, offset=1,
                                                                          startFace=startFace,
                                                                     endFace=endFace, blueprint=blueprint,
                                                                                 )
-
-        # if ik_motion is None:
-        #     ik_motion = ik_motion_inst
-        # else:
-        #     ik_motion = np.concatenate((ik_motion, ik_motion_inst))
-        #
-        # if path is None:
-        #     path = path_inst
-        # else:
-        #     path.append(path_inst)
-        #     path = np.asarray(path).flatten().tolist()
-        # if directions is None:
-        #     directions = directions_inst
-        # else:
-        #     directions.append(directions_inst)
-        # if animation_update is None:
-        #     animation_update = animation_update
-        # else:
-        #     animation_update.append(animation_update_inst)
-
-
-
 
     robot = model.Inchworm(base=base, blueprint=blueprint)
 
@@ -452,7 +363,7 @@ def add_offset(ee_pos, direction, offset, previous_direction=None, index=None, t
 
     if direction == "top" or previous_direction == "top":
         if type == "ee_up":
-
+            pass
         else:
             ee_pos[2] = float(ee_pos[2]) + offset
 
@@ -494,4 +405,63 @@ def add_offset(ee_pos, direction, offset, previous_direction=None, index=None, t
 
 
 if __name__ == '__main__':
-    main()
+    blueprint = np.array([
+        [[1, 0, 0], [1, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [1, 1, 1]],
+        [[1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0], [0, 0, 0], [0, 0, 0]],
+        [[1, 0, 0], [1, 1, 0], [0, 0, 0], [1, 0, 0], [0, 0, 0], [0, 0, 0]],
+        [[1, 0, 0], [1, 0, 0], [0, 0, 0], [1, 0, 0], [0, 0, 0], [0, 0, 0]],
+        [[1, 1, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+        [[1, 1, 1], [0, 0, 0], [1, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+        [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+        [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]
+    ])
+
+    # playground
+    blueprint = np.array([
+        [[1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]],
+        [[1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]],
+        [[1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]],
+        [[1, 0, 0, 0], [1, 1, 0, 0], [1, 1, 1, 1]],
+        [[1, 0, 0, 0], [1, 1, 1, 0], [1, 1, 1, 1]],
+        [[1, 0, 0, 0], [1, 1, 1, 1], [1, 1, 1, 1]],
+    ])
+
+    # modified playground
+    # blueprint = np.array([
+    #     [[1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0]],
+    #     [[1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0]],
+    #     [[1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0]],
+    #     [[1, 0, 0, 0, 0, 0, 0], [1, 1, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1]],
+    #     [[1, 0, 0, 0, 0, 0, 0], [1, 1, 1, 0, 0, 0, 0], [1, 1, 1, 1, 0, 0, 0]],
+    #     [[1, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 0, 0, 0], [1, 1, 1, 1, 0, 0, 0]],
+    # ])
+
+    # top of stairs
+    # base = np.matrix([[1, 0, 0, 5.5],
+    #                    [0, 1, 0, 2.5],
+    #                    [0, 0, 1, 4.],
+    #                    [0, 0, 0, 1]])
+
+    base = np.matrix([[1, 0, 0, 0.5],
+                      [0, 1, 0, 0.5],
+                      [0, 0, 1, 1.],
+                      [0, 0, 0, 1]])
+    # base = tr.trotz(180, unit="deg", xyz=[4.5, 2.5, 4])
+    # robot = model.Puma560_TEST(base=np.matrix([[1, 0, 0, 0.5],
+    #                                           [0, 1, 0, 1.5],
+    #                                           [0, 0, 1, 1],
+    #                                           [0, 0, 0, 1]]), blueprint=blueprint)
+    robot = model.Inchworm(base=base, blueprint=blueprint)
+
+    num_steps = 20
+
+    startFace = (1, 0, 0, 'top')
+    # startFace = BlockFace(5, 1, 3, 'top')
+    # endFace = BlockFace(5, 2, 3, 'top')
+    # endFace = BlockFace(5, 1, 3, 'top')
+    endFace = (5, 0, 0, 'top')
+    # endFace = BlockFace(3, 2, 6, "top")
+    # endFace = BlockFace(3, 2, 3, "left")
+    # endFace= BlockFace(3, 2, 5, "left")
+    # endFace = BlockFace(1, 0, 0, 'top')
+    robot_simulation(blueprint=blueprint, base=base, num_steps=num_steps, startFace=startFace, endFace=endFace)

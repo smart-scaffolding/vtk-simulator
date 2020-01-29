@@ -117,18 +117,18 @@ def create_root():
         running_until=2,
         success_until=10
     )
-    high_priority_interrupt = py_trees.decorators.RunningIsFailure(
-        child=py_trees.behaviours.Periodic(
-            name="High Priority",
-            n=3
-        )
-    )
+    # high_priority_interrupt = py_trees.decorators.RunningIsFailure(
+    #     child=py_trees.behaviours.Periodic(
+    #         name="High Priority",
+    #         n=3
+    #     )
+    # )
     piwylo = py_trees.idioms.pick_up_where_you_left_off(
         name="Pick Up\nWhere You\nLeft Off",
         tasks=[task_one, task_two]
     )
     root = py_trees.composites.Selector(name="Root")
-    root.add_children([high_priority_interrupt, piwylo])
+    root.add_children([piwylo])
 
     return root
 
