@@ -10,9 +10,11 @@ import time
 accuracy = 1e-7
 threshold = 1
 # num_way_points = 2
-use_face_star = True
+use_face_star = False
 animate = True
 move_both_end_effectors=True
+use_serial = True
+
 
 def main():
 
@@ -28,11 +30,12 @@ def main():
 
 
     robot = model.Inchworm(base=np.matrix([[1, 0, 0, 0.5],
-                                               [0, 1, 0, 1.5],
+                                               [0, 1, 0, 0.5],
                                                [0, 0, 1, 1.],
                                                [0, 0, 0, 1]]), blueprint=blueprint)
 
-    num_steps = 40
+    # robot.update_angles(np.array([0, 0, 0, -90]), unit="deg")
+    num_steps = 5
 
     # robot.update_angles(np.array([0, 1.08030020e+00,  -2.16060041e+00, -4.89677758e-01])*180/np.pi)
     # startFace = BlockFace(1, 0, 0, 'top')
@@ -52,14 +55,17 @@ def main():
                                                                     endFace=endFace, blueprint=blueprint,
 
                                                                          )
-    port='/dev/cu.usbmodem14201'
-    # port = None
+
+    port = None
+    if use_serial:
+        port='/dev/cu.usbmodem14201'
+
     robot = model.Inchworm(base=np.matrix([[1, 0, 0, 0.5],
-                                               [0, 1, 0, 1.5],
+                                               [0, 1, 0, 0.5],
                                                [0, 0, 1, 1.],
                                                [0, 0, 0, 1]]), blueprint=blueprint, port=port)
 
-
+    # robot.update_angles(np.array([0, 0, 0, -90]), unit="deg")
     print("Path Length: {}".format(len(path[0][1:][0])))
     print("Path: {}".format(path))
     print("Num Steps: {}".format(num_steps))
@@ -85,8 +91,10 @@ def main():
     print("Final Angle: {}".format(ik_motion[-1]))
     flip_angles=True
     for index, angle in enumerate(ik_motion):
-        print(angle)
+        # print(f"Angle: {angle}")
+
         angle = angle.tolist()[0]
+        # robot.map_angles_to_robot(angle)
         if index % (num_steps) == 0:
             print("\nFIRST POINT REACHED")
 
@@ -102,7 +110,8 @@ def main():
             angle[1] = 180 / 2 + angle[3]
             angle[3] = temp - 180 / 2
 
-        robot.send_to_robot(angle, 0.25)
+        if use_serial:
+            robot.send_to_robot(angle, 5)
         # robot.plot(angle, unit="deg")
 
 
@@ -164,7 +173,8 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint, secondP
 
     # path = [(2.49, 2.49, 1.3, "top"), (0.49, 2.49, 1.3, "top"),(2, 2.49, 2.5, "left")]
     if not use_face_star:
-        path = [(1, 2, 0, "top"), (0, 2, 0, "top"), (3, 2, 3, "left"), (3, 2, 2, "left"), (3, 2, 5, "left"), (3, 2, 4, "left") ]
+        # path = [(1, 2, 0, "top"), (0, 2, 0, "top"), (3, 2, 3, "left"), (3, 2, 2, "left"), (3, 2, 5, "left"), (3, 2, 4, "left") ]
+        path = [(2, 0, 0, "top")]
     armReach = [2.38, 1.58]
 
     # armReach = [1.5, 1.5]
@@ -206,9 +216,12 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint, secondP
     back_foot_pos = None
     # previous_direction = "top"
     for index, item in enumerate(path):
+        print(path)
+
         # move_ee_up = robot.end_effector_position().flatten().tolist()[0]
 
         direction = item[-1]
+        print(direction)
         if index == 0:
             global_direction.append((0, "top"))
             previous_direction = "top"
