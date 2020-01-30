@@ -111,7 +111,7 @@ def main():
             angle[3] = temp - 180 / 2
 
         if use_serial:
-            robot.send_to_robot(angle, 5)
+            robot.send_to_robot(angle, delay=5)
         # robot.plot(angle, unit="deg")
 
 
