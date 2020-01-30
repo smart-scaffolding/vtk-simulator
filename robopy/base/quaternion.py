@@ -7,7 +7,7 @@ from math import sqrt
 from numpy import trace
 from .transforms import *
 from ..tests.test_common import *
-from .graphics import *
+# from .graphics import *
 
 
 class Quaternion:

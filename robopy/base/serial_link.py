@@ -5,15 +5,15 @@ from abc import ABC
 import math
 from math import pi
 import numpy as np
-import vtk
+# import vtk
 from . import transforms
-from .graphics import VtkPipeline
+# from .graphics import VtkPipeline
 from .graphics import axesCube
-from .graphics import axesCubeFloor
-from .graphics import vtk_named_colors
-from .graphics import cubeForPath, circleForTrajectory
-from .graphics import MakeAxesActor
-from .graphics import vtk_named_colors
+# from .graphics import axesCubeFloor
+# from .graphics import vtk_named_colors
+# from .graphics import cubeForPath, circleForTrajectory
+# from .graphics import MakeAxesActor
+# from .graphics import vtk_named_colors
 import pkg_resources
 from scipy.optimize import minimize
 import robopy.base.transforms as tr
@@ -63,10 +63,10 @@ class SerialLink:
             self.name = ''
         else:
             self.name = name
-        if colors is None:
-            self.colors = vtk_named_colors(["Grey"] * len(stl_files))
-        else:
-            self.colors = colors
+        # if colors is None:
+        #     self.colors = vtk_named_colors(["Grey"] * len(stl_files))
+        # else:
+        #     self.colors = colors
         if param is None:
             # If model deosn't pass params, then use these default ones
             self.param = {
@@ -264,6 +264,9 @@ class SerialLink:
         time.sleep(delay)
 
 
+    def transform_angles_for_robot(self, q):
+        return np.array([q[0], 90 - q[1], q[2]*-1, q[3]*-1])
+
     def map_angles_to_robot(self, q, open_gripper=False):
         """
         Creates a mapping between the angles used by the higher level code and the actual robot angles
@@ -272,7 +275,7 @@ class SerialLink:
         :return:
         """
 
-        qTemp = np.array([q[0], 90 - q[1], q[2]*-1, q[3]*-1])
+        qTemp = self.transform_angles_for_robot(q)
         # qTemp = qTemp * 180.0 / np.pi  # convert to degrees
         print("Final Angles: {}".format(qTemp[1:]))
 

@@ -8,7 +8,7 @@ from . import check_args
 from ..tests import test_transforms
 from . import common
 import unittest
-import vtk
+# import vtk
 
 
 # ---------------------------------------------------------------------------------------#

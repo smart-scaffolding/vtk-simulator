@@ -13,7 +13,7 @@ threshold = 1
 use_face_star = False
 use_serial = False
 
-def robot_simulation(blueprint, base, num_steps, startFace, endFace):
+def robot_simulation(blueprint, base, num_steps, startFace, endFace, time_delay, port):
     startFace = BlockFace(*startFace)
     endFace = BlockFace(*endFace)
 
@@ -25,7 +25,7 @@ def robot_simulation(blueprint, base, num_steps, startFace, endFace):
                                                                     endFace=endFace, blueprint=blueprint,
                                                                                 )
 
-    robot = model.Inchworm(base=base, blueprint=blueprint)
+    robot = model.Inchworm(base=base, blueprint=blueprint, port=port)
 
 
     print("Path Length: {}".format(len(path[0][1:][0])))
@@ -55,7 +55,7 @@ def robot_simulation(blueprint, base, num_steps, startFace, endFace):
         # print(f"Angle: {angle}")
 
         angle = angle.tolist()[0]
-        # robot.map_angles_to_robot(angle)
+        #
         if index % (num_steps) == 0:
             print("\nFIRST POINT REACHED")
 
@@ -71,14 +71,14 @@ def robot_simulation(blueprint, base, num_steps, startFace, endFace):
             angle[1] = 180 / 2 + angle[3]
             angle[3] = temp - 180 / 2
 
-        angles.append(angle)
+        angles.append(robot.transform_angles_for_robot(angle))
         if use_serial:
-            robot.send_to_robot(angle, 5)
+            robot.send_to_robot(angle, time_delay)
 
     # robot.animate(stances=ik_motion, frame_rate=30, unit='deg', num_steps=num_steps*3, orientation=robot_orientation,
     #               showPath=True, showPlacedBlock=True, update=animation_update)
 
-        return angles
+    return angles
 
 def move_to_point(direction, point, robot, num_steps, previous_angles=None, flip_angles=False, accuracy=accuracy):
     # print(point)

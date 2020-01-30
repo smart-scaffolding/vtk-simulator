@@ -5,7 +5,7 @@ from .serial_link import Revolute
 from math import pi
 import numpy as np
 from . import transforms as tr
-from . import graphics
+# from . import graphics
 from .common import ishomog
 
 
@@ -74,10 +74,10 @@ class Inchworm(SerialLink):
             assert ishomog(base, (4, 4))
         file_names = SerialLink._setup_file_names(4)
         # colors = graphics.vtk_named_colors(["Red", "DarkGreen", "Blue", "Cyan"])
-        colors = graphics.vtk_named_colors(["Red", "Blue", "Blue", "Purple"])
+        # colors = graphics.vtk_named_colors(["Red", "Blue", "Blue", "Purple"])
 
 
-        super().__init__(links=links, base=base, name='inchworm', stl_files=file_names, colors=colors, param=param,
+        super().__init__(links=links, base=base, name='inchworm', stl_files=file_names, colors=None, param=param,
                          blueprint=blueprint, port=port, baud=baud)
 
 

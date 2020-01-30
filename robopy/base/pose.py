@@ -8,9 +8,9 @@ from . import check_args
 from .super_pose import SuperPose
 from random import uniform, randint
 from . import transforms
-import vtk
-from . import graphics
-from .graphics import VtkPipeline
+# import vtk
+# from . import graphics
+# from .graphics import VtkPipeline
 
 
 # TODO Implement argument checking for all poses

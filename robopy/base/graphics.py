@@ -1,7 +1,7 @@
 # Created by: Aditya Dua
 # 18 August 2017
 import pkg_resources
-import vtk
+# import vtk
 import math
 import numpy as np
 import random
