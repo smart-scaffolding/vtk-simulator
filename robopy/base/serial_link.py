@@ -22,6 +22,7 @@ from scipy.spatial.transform import Rotation as R
 from serial import Serial, PARITY_NONE, STOPBITS_ONE, EIGHTBITS
 import time
 import random
+from math import cos, sin, atan2, acos, asin
 
 class SerialLink:
     """
@@ -377,10 +378,9 @@ class SerialLink:
 
 
         t = t * self.tool
-
         return t
 
-    def ikineConstrained(self, direction, p, accuracy=1e-7, num_iterations=1000, alpha=0.1, prior_q=None, vertical=False, flipped=False):
+    def ikineConstrained(self, direction, p, theta=-pi/2, phi=0, accuracy=1e-7, num_iterations=1000, alpha=0.1, prior_q=None, vertical=False, flipped=False):
         """Computes the inverse kinematics to find the correct joint
         configuration to reach a given point
 
@@ -427,7 +427,6 @@ class SerialLink:
             # Convert error from homogeneous to xyz space
             err = create_point_from_homogeneous_transform(err)
 
-
             # Get the psudoinverse of the Jacobian
             J = self.jacob0(q)
             vel_J = J[0:3, :]
@@ -470,6 +469,38 @@ class SerialLink:
 
                 return q
         raise ValueError("Could not find solution.")
+
+    # Units: inches, radians
+    def ikin(self, baseXYZ, eeTargetXYZ, theta, phi, baseID):
+        # Robot Parameters
+        L1 = 4.125 # L1 in inches
+        L2 = 6.43 # L2 in inches
+        blockWidth = 3 # in inches
+
+        err = (eeTargetXYZ - baseXYZ) * blockWidth
+        x,y,z = err
+
+        P_prime = [x - cos(atan2(y,x)) * L1 * cos(theta - pi/2), # adjusted goal point
+                   y - sin(atan2(y,x)) * L1 * cos(theta - pi/2),
+                   z - L1 * cos(theta)]
+        a = np.linalg.norm(P_prime - [0, 0, L1]) # length of vector between top of link 1 and adjusted goal point
+
+        A = acos((a^2 - 2*(L2^2))/(-2*(L2^2)))
+        B = acos(a/(2*L2))
+        C = pi - A - B
+        alpha = asin((P_prime[3] - L1)/a)
+
+        q1 = atan2(y,x)
+        q2 = (pi/2) - C - alpha
+        q3 = pi - A
+        q4 = theta - q2 - q3
+        q5 = phi
+
+        if baseID == 'A':
+            q = [q1,q2,q3,q4,q5]
+        elif baseID == 'D':
+            q = [q5,q4,q3,q2,q1]
+        return q
 
 
     def jacob0(self, q=None):

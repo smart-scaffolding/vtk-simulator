@@ -143,7 +143,7 @@ def main():
 def move_to_point(direction, point, robot, num_steps, previous_angles=None, flip_angles=False, accuracy=accuracy):
     # print(point)
     try:
-        ik_angles = robot.ikineConstrained(direction, point, flipped=flip_angles, accuracy=accuracy) * 180 / np.pi ## converted to degrees
+        ik_angles = robot.ikineConstrained(direction, p=point, flipped=flip_angles, accuracy=accuracy) * 180 / np.pi ## converted to degrees
         # print(ik_angles)
 
     except ValueError as e:

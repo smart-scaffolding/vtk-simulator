@@ -299,8 +299,10 @@ class FaceStar:
 
 
 if __name__ == '__main__':
-    # armReach = [2.38, 1.6]
-    armReach = [2.38, 2.38]
+    armReach = [2.38, 1.6]
+    # armReach = [2.38, 2.38]
+    # armReach = [1.6, 1.6]
+
 
     startFace = BlockFace(0,0,0,'top')
     endFace = BlockFace(7,2,2,'right')
@@ -337,11 +339,11 @@ if __name__ == '__main__':
     ])
 
     startFaceDebug = BlockFace(1,2,0,'top')
-    endFaceDebug = BlockFace(5,2,3,'top')
+    endFaceDebug = BlockFace(5,2,3,'left')
 
     faceStarDebug = FaceStar(startFaceDebug, endFaceDebug, bp2, armReach)
     # faceStarDebug.display_blueprint()
-    # faceStarDebug.display_start_end([startFaceDebug.get_face_coordinate(),endFaceDebug.get_face_coordinate()])
+    faceStarDebug.display_start_end([startFaceDebug.get_face_coordinate(),endFaceDebug.get_face_coordinate()])
     path = faceStarDebug.get_path()
     faceStarDebug.display_path()
 

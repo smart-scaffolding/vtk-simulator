@@ -11,7 +11,7 @@ accuracy = 1e-7
 threshold = 1
 # num_way_points = 2
 use_face_star = False
-animate = True
+animate = False
 move_both_end_effectors=True
 use_serial = True
 
@@ -35,7 +35,7 @@ def main():
                                                [0, 0, 0, 1]]), blueprint=blueprint)
 
     # robot.update_angles(np.array([0, 0, 0, -90]), unit="deg")
-    num_steps = 5
+    num_steps = 20
 
     # robot.update_angles(np.array([0, 1.08030020e+00,  -2.16060041e+00, -4.89677758e-01])*180/np.pi)
     # startFace = BlockFace(1, 0, 0, 'top')
@@ -58,7 +58,7 @@ def main():
 
     port = None
     if use_serial:
-        port='/dev/cu.usbmodem14201'
+        port='/dev/cu.usbmodem14101'
 
     robot = model.Inchworm(base=np.matrix([[1, 0, 0, 0.5],
                                                [0, 1, 0, 0.5],
@@ -111,7 +111,7 @@ def main():
             angle[3] = temp - 180 / 2
 
         if use_serial:
-            robot.send_to_robot(angle, delay=5)
+            robot.send_to_robot(angle, delay=0.5)
         # robot.plot(angle, unit="deg")
 
 
