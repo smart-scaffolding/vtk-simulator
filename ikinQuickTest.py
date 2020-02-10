@@ -15,9 +15,11 @@ def ikin(goalPos,gamma,phi,baseID,elbow_up=1):
     L2 = 6.43 # L2 in inches
     blockWidth = 3
     
-    relativePos = handlePlaneChanges(goalPos=goalPos,gamma=gamma,baseID=baseID)
-    x,y,z = relativePos  * blockWidth
+    relativePos, localGamma = handlePlaneChanges(goalPos=goalPos,gamma=gamma,baseID=baseID)
+    x,y,z = relativePos * blockWidth
     # print(f'x y z is {x} {y} {z}')
+    print(f'gamma is: {gamma}')
+    print(f'localGamma is : {localGamma}')
 
     q1 = atan2(y,x) # joint1 angle
     # print(f'q1 is {q1*180/pi}')
@@ -26,8 +28,8 @@ def ikin(goalPos,gamma,phi,baseID,elbow_up=1):
     new_x = x/cos(q1)
     # print(f'new_x is {new_x}')
 
-    x3 = new_x - L1 * cos(gamma)
-    z3 = new_z - L1 * sin(gamma) #reduce to the 2dof planar robot
+    x3 = new_x - L1 * cos(localGamma)
+    z3 = new_z - L1 * sin(localGamma) #reduce to the 2dof planar robot
 
     beta = acos((L2**2 + (x3**2 + z3**2) - L2**2)/(2*L2*sqrt(x3**2 + z3**2)))
 
@@ -39,7 +41,7 @@ def ikin(goalPos,gamma,phi,baseID,elbow_up=1):
         q3 = -2 * beta
         q2 = pi/2 - (atan2(z3,x3) - beta)
 
-    q4 = (gamma - pi/2 + q2 + q3)*-1
+    q4 = (localGamma - pi/2 + q2 + q3)*-1
     q5 = phi - q1
     q = []
 
@@ -57,13 +59,9 @@ def handlePlaneChanges(goalPos,gamma,baseID):
     basePos = np.zeros(3)
     goalOri = np.zeros(3)
 
-    # print(f'AEEPOS: {AEEPOS}')
-    # print(f'DEEORI: {DEEORI}')
-    # print(f'DEEPOS: {DEEPOS}')
-    # print(f'DEEORI: {DEEORI}\n')
+    print(f'baseID: {baseID}')
 
-    # gets the relativePos and basePos in the global reference frame
-    # gets baseOri in the local reference frame
+    # gets the relativePos, basePos, and baseOri in the global reference frame
     if baseID == 'A': # requested ee is A
         relativePos = goalPos - AEEPOS
         baseOri = AEEORI
@@ -77,6 +75,8 @@ def handlePlaneChanges(goalPos,gamma,baseID):
     # in global reference frame
     # !! This needs to be done before relativePos switched into local frame
     armFacing = atan2(relativePos[1],relativePos[0])
+    print(f'relativePos: {relativePos}')
+    print(f'armFacing: {armFacing}')
 
     # rotates relativePos from global reference frame to local reference frame
     if baseOri[0] == 1: # local +z facing global +x, rotate -90 around y
@@ -92,21 +92,59 @@ def handlePlaneChanges(goalPos,gamma,baseID):
     elif baseOri[2] == -1: # local +z facing global -z, rotate 180 around y
         relativePos = np.dot(getRy(pi),relativePos)
 
-    # sets goal orientation back from global reference frame to local reference frame
+    print(f'relativePos in local frame: {relativePos}')
+    localGamma = gamma
+
+    # updates goal orientation and 
+    # switches gamma value from global reference frame to local reference frame
     if gamma == -pi/2: # goal ee will be facing down
         goalOri = np.array([0,0,1]).T
+        if baseOri[2] == 1: # base ee down
+            pass
+        elif baseOri[2] == -1: # base ee up
+            localGamma = -gamma
+        else: # base ee horizontal
+            localGamma = 0
+        print(' GOT HERE ')
     elif gamma == pi/2: # goal ee will be facing up
         goalOri = np.array([0,0,-1]).T
-    elif gamma == 0: # goal ee horizontal
-        if armFacing == 0: # goal ee facing right
-            goalOri = np.array([-1,0,0]).T
-        elif armFacing == pi or armFacing == -pi: # goal ee facing left
-            goalOri = np.array([1,0,0]).T
-        elif armFacing == pi/2: # goal ee facing back
-            goalOri = np.array([0,-1,0]).T
-        elif armFacing == -pi/2: # goal ee facing front
-            goalOri = np.array([0,1,0]).T
-    # updates the goalPos and goalOri to the moving ee
+        if baseOri[2] == 1: # base ee down
+            pass
+        elif baseOri[2] == -1: # base ee up
+            localGamma = -gamma
+        else: # base ee horizontal
+            localGamma = 0
+    elif gamma == 0 or gamma == -pi: # goal ee horizontal
+        if armFacing == 0 or armFacing == pi: # goal ee facing right (positive X)
+            if gamma == 0:
+                goalOri = np.array([-1,0,0]).T
+            else:
+                goalOri = np.array([1,0,0]).T
+        elif armFacing == -pi: # goal ee facing left (negative X)
+            if gamma == 0:
+                goalOri = np.array([1,0,0]).T
+            else:
+                goalOri = np.array([-1,0,0]).T
+        elif armFacing == pi/2: # goal ee facing back (positive Y)
+            if gamma == 0:
+                goalOri = np.array([0,-1,0]).T
+            else:
+                goalOri = np.array([0,1,0]).T
+        elif armFacing == -pi/2: # goal ee facing front (negative Y)
+            if gamma == 0:
+                goalOri = np.array([0,1,0]).T
+            else:
+                goalOri = np.array([0,-1,0]).T
+        
+        if baseOri[2] != 0: # base ee down or up
+            pass
+        else: # base ee horizontal
+            if baseOri.all() != goalOri.all():
+                localGamma = pi/2
+            else:
+                localGamma = -pi/2
+
+    # sets the goalPos and goalOri to the moving ee
     if baseID == 'A': # requested ee is A, update D to match goal
         DEEPOS = goalPos
         DEEORI = goalOri
@@ -114,7 +152,12 @@ def handlePlaneChanges(goalPos,gamma,baseID):
         AEEPOS = goalPos
         AEEORI = goalOri
 
-    return relativePos.T
+    print(f'AEEPOS: {AEEPOS}')
+    print(f'AEEORI: {AEEORI}')
+    print(f'DEEPOS: {DEEPOS}')
+    print(f'DEEORI: {DEEORI}\n')
+
+    return relativePos.T, localGamma
 
 def setEEStartingPoses(aEEPos,aEEOri,dEEPos,dEEOri):
     global AEEPOS, AEEORI, DEEPOS, DEEORI
@@ -154,19 +197,20 @@ def getRz(theta):
     return T
 
 def samePlane():
+    resetToHome()
     print('Same Plane')
 
-    pos1 = np.array([0,0,0,0,0]) # x, y, z, gamma, phi
-    pos2 = np.array([2,2,0,-pi/2,0])
-    pos3 = np.array([1,4,0,-pi/2,0])
+    pos0 = np.array([0,0,0])
+    pos1 = np.array([2,2,0,-pi/2,0]) # x, y, z, gamma, phi
+    pos2 = np.array([1,4,0,-pi/2,0]) # x, y, z, gamma, phi
 
-    qA = ikin(goalPos=pos2[:3],gamma=pos2[3],phi=pos2[4],elbow_up=1,baseID='A')
-    print(f'Step one \n({pos1}) \nto \n({pos2}): \n\n{qA*180/pi}\n\n')
+    qA = ikin(goalPos=pos1[:3],gamma=pos1[3],phi=pos1[4],elbow_up=1,baseID='A')
+    print(f'Step one \n({pos0}) \nto \n({pos1}): \n\n{qA*180/pi}\n\n')
 
-    qD = ikin(goalPos=pos3[:3],gamma=pos3[3],phi=pos3[4],elbow_up=1,baseID='D')
-    print(f'Step two \n({pos2}) \nto \n({pos3}): \n\n{qD*180/pi}\n\n')
+    qD = ikin(goalPos=pos2[:3],gamma=pos2[3],phi=pos2[4],elbow_up=1,baseID='D')
+    print(f'Step two \n({pos1}) \nto \n({pos2}): \n\n{qD*180/pi}\n\n')
 
-def differentPlane():
+def changePlaneNInch():
     # 1. Save the current orientation and position of the both ee.
     # Transformation matrices? Otherwise it would be a mess to keep 
     # track of the current pose and update accordingly
@@ -178,38 +222,100 @@ def differentPlane():
     # diagnoal moves are only feasible when on the same plane and 
     # plane change is only feasible when perpendicular lines
 
+    resetToHome()
     print('Different Plane')
 
-    pos1 = np.array([0,0,0,0,0,0]) # x, y, z, gamma, phi, baseOrientation
-    pos2 = np.array([3,0,3,0,0,0])
-    pos3 = np.array([1,0,0,-pi/2,0,0])
+    pos0 = np.array([0,0,0])
+    pos1 = np.array([3,0,3,0,0]) # x, y, z, gamma, phi
+    pos2 = np.array([1,0,0,-pi/2,0])
 
-    qA = ikin(goalPos=pos2[:3],gamma=pos2[3],phi=pos2[4],elbow_up=1,baseID='A')
-    print(f'Step one \n({pos1}) \nto \n({pos2}): \n\n{qA*180/pi}\n\n')
+    qA = ikin(goalPos=pos1[:3],gamma=pos1[3],phi=pos1[4],elbow_up=1,baseID='A')
+    print(f'Step one \n({pos0}) \nto \n({pos1}): \n\n{qA*180/pi}\n\n')
 
-    qD = ikin(goalPos=pos3[:3],gamma=pos3[3],phi=pos3[4],elbow_up=1,baseID='D')
-    print(f'Step two \n({pos2}) \nto \n({pos3}): \n\n{qD*180/pi}\n\n')
+    qD = ikin(goalPos=pos2[:3],gamma=pos2[3],phi=pos2[4],elbow_up=1,baseID='D')
+    print(f'Step two \n({pos1}) \nto \n({pos2}): \n\n{qD*180/pi}\n\n')
 
 def baseCheck():
+    resetToHome()
     print('Base Check')
 
-    pos1 = np.array([0,0,0,0,0]) # x, y, z, gamma, phi
-    pos2 = np.array([2,0,0,-pi/2,0])
+    pos0 = np.array([0,0,0])
+    pos1 = np.array([2,0,0,-pi/2,0,0]) # x, y, z, gamma, phi, requestedBase(0 for 'A'; 1 for 'D')
 
-    qA = ikin(goalPos=pos2[:3],gamma=pos2[3],phi=pos2[4],elbow_up=1,baseID='A')
-    print(f'Step one \n({pos1}) \nto \n({pos2}): \n\n{qA*180/pi}\n\n')
+    qA = ikin(goalPos=pos1[:3],gamma=pos1[3],phi=pos1[4],elbow_up=1,baseID='A')
+    print(f'Step one \n({pos0}) \nto \n({pos1}): \n\n{qA*180/pi}\n\n')
 
-if __name__ == "__main__":
+def changePlaneNClimbXZ():
+    resetToHome()
+    steps = []
+    steps.append(np.array([2,0,3,0,0,1,0])) # x, y, z, gamma, phi, elbow(1 for up 0 for down), requestedBase(0 for 'A'; 1 for 'D')
+    steps.append(np.array([2,0,1,0,0,1,1]))
+    steps.append(np.array([2,0,4,0,0,1,0]))
+    steps.append(np.array([2,0,2,0,0,1,1]))
+    performSteps(steps)
+
+def changePlaneNClimbYZ():
+    resetToHome()
+    steps = []
+    steps.append(np.array([0,2,3,0,0,1,0])) # x, y, z, gamma, phi, elbow(1 for up 0 for down), requestedBase(0 for 'A'; 1 for 'D')
+    steps.append(np.array([0,2,1,0,0,1,1]))
+    steps.append(np.array([0,2,4,0,0,1,0]))
+    steps.append(np.array([0,2,2,0,0,1,1]))
+    performSteps(steps)
+
+def convexCorner(): # 
+    print('Convex corner +x to -z')
+    resetToHome()
+    steps = []
+    steps.append(np.array([2,0,-1,-pi,0,1,0])) # x, y, z, gamma, phi, elbow(1 for up 0 for down), requestedBase(0 for 'A'; 1 for 'D')
+    steps.append(np.array([1,0,0,-pi/2,0,1,1]))
+    steps.append(np.array([2,0,-2,-pi,0,1,0]))
+    steps.append(np.array([2,0,-1,-pi,0,1,1]))
+    performSteps(steps)
+    print('Convex corner -x to -z')
+    resetToHome()
+    steps = []
+    steps.append(np.array([-2,0,-1,0,0,1,0])) # x, y, z, gamma, phi, elbow(1 for up 0 for down), requestedBase(0 for 'A'; 1 for 'D')
+    steps.append(np.array([-1,0,0,-pi/2,0,1,1]))
+    steps.append(np.array([-2,0,-2,0,0,1,0]))
+    steps.append(np.array([-2,0,-1,0,0,1,1]))
+    performSteps(steps)
+
+def planeChanges():
+    pass
+
+def performSteps(steps):
+    for step in steps:
+        baseID = 'A'
+        if step[6] == 1:
+            baseID = 'D'
+        print(f'Step to \n({step[:3]}):')
+        qA = ikin(goalPos=step[:3],gamma=step[3],phi=step[4],elbow_up=step[5],baseID=baseID)
+        print(f'joint angles: {qA*180/pi}\n\n')
+
+def resetToHome():
     aEEPos = np.array([0,0,0]).T
     aEEOri = np.array([0,0,1]).T
     dEEPos = np.array([0,0,0]).T
     dEEOri = np.array([0,0,1]).T
-
     setEEStartingPoses(aEEPos=aEEPos,aEEOri=aEEOri,dEEPos=dEEPos,dEEOri=dEEOri)
-    baseCheck()
 
-    # setEEStartingPoses(aEEPos=aEEPos,aEEOri=aEEOri,dEEPos=dEEPos,dEEOri=dEEOri)
+if __name__ == "__main__":
+    # baseCheck()
+
     # samePlane()
 
-    # setEEStartingPoses(aEEPos=aEEPos,aEEOri=aEEOri,dEEPos=dEEPos,dEEOri=dEEOri)
-    # differentPlane()    
+    # changePlaneNInch()
+
+    # changePlaneNClimbXZ()
+
+    changePlaneNClimbYZ()
+
+    # convexCorner()
+
+    # steps = []
+    # steps.append(np.array([2,0,1,0,0,1,0]))
+    # steps.append(np.array([4,0,2,-pi/2,0,0,1]))
+    # resetToHome()
+    # performSteps(steps)
+    

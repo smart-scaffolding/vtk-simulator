@@ -58,7 +58,7 @@ def main():
 
     port = None
     if use_serial:
-        port='/dev/cu.usbmodem14101'
+        port='/dev/cu.usbmodem14201'
 
     robot = model.Inchworm(base=np.matrix([[1, 0, 0, 0.5],
                                                [0, 1, 0, 0.5],
