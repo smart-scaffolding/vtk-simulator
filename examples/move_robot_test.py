@@ -11,11 +11,12 @@ accuracy = 1e-7
 threshold = 1
 # num_way_points = 2
 use_face_star = False
-animate = True
+animate = False
 move_both_end_effectors=True
 use_serial = True
 
 
+robot_ee_starting_point = (2.5, 0.5, 1)
 def main():
 
     #playground
@@ -35,7 +36,7 @@ def main():
                                                [0, 0, 0, 1]]), blueprint=blueprint)
 
     # robot.update_angles(np.array([0, 0, 0, -90]), unit="deg")
-    num_steps = 5
+    num_steps = 20
 
     # robot.update_angles(np.array([0, 1.08030020e+00,  -2.16060041e+00, -4.89677758e-01])*180/np.pi)
     # startFace = BlockFace(1, 0, 0, 'top')
@@ -111,7 +112,7 @@ def main():
             angle[3] = temp - 180 / 2
 
         if use_serial:
-            robot.send_to_robot(angle, delay=5)
+            robot.send_to_robot(angle, delay=0.2)
         # robot.plot(angle, unit="deg")
 
 
@@ -148,7 +149,7 @@ def move_to_point(direction, point, robot, num_steps, previous_angles=None, flip
 
 
     if previous_angles is None:
-        previous_angles = [1] * robot.length
+        previous_angles = [1.61095456e-15,  6.18966422e+01, -1.23793284e+02, -2.80564688e+01]
 
     # else:
     #     print("Previous Angles: {}".format(previous_angles))
@@ -174,7 +175,8 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint, secondP
     # path = [(2.49, 2.49, 1.3, "top"), (0.49, 2.49, 1.3, "top"),(2, 2.49, 2.5, "left")]
     if not use_face_star:
         # path = [(1, 2, 0, "top"), (0, 2, 0, "top"), (3, 2, 3, "left"), (3, 2, 2, "left"), (3, 2, 5, "left"), (3, 2, 4, "left") ]
-        path = [(2, 0, 0, "top")]
+        # path = [(3, 0, 0, "top")]
+        path = [(3, 0, 0, "top"), (1, 0, 0, "top"), (4, 0, 0, "top")]
     armReach = [2.38, 1.58]
 
     # armReach = [1.5, 1.5]
@@ -195,10 +197,10 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint, secondP
         for index, point in enumerate(path):
             filtered_path.append(point)
             if index == 0:
-                # if secondPosition == 0:
-                #     filtered_path.append((0, 0, 0, "top"))
-                # else:
-                filtered_path.append((0, 1, 0, "top"))
+                if secondPosition == 0:
+                    filtered_path.append((0, 0, 0, "top"))
+                else:
+                    filtered_path.append((0, 1, 0, "top"))
             else:
                 filtered_path.append(path[index-1])
 
@@ -249,7 +251,7 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint, secondP
 
 
         if index == 0:
-            ee_up = list(point)
+            ee_up = list(robot_ee_starting_point)
             # TODO: FIX TO ACCEPT ANY ORIENTATION, NOT JUST +Z
             # move_up[2] = move_up[2] + offset
             previous_angles_1, previous_angles_2, previous_angles_3 = None, None, None
@@ -273,8 +275,9 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint, secondP
             #                                        move_to_point(direction, point, robot, num_steps,
             #                                                      previous_angles_2[-1].flatten().tolist()[0])])
             #     else:
-            stop_above = point
-            previous_angles_2 = move_to_point(direction, point, robot, num_steps,
+            stop_above = np.copy(point)
+            stop_above = add_offset(stop_above, direction, offset)
+            previous_angles_2 = move_to_point(direction, stop_above, robot, num_steps,
                                                       previous_angles_1[-1].flatten().tolist()[0])
 
 
@@ -292,6 +295,7 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint, secondP
 
 
         else:
+            # previous_angles_3 = [1.61095456e-15, 6.18966422e+01, -1.23793284e+02, -2.80564688e+01]
             ee_pos = robot.end_effector_position()
             initial_angles = previous_angles_3[-1].flatten().tolist()[0]
             #

@@ -276,9 +276,9 @@ class SerialLink:
         # qTemp = qTemp * 180.0 / np.pi  # convert to degrees
         print("Final Angles: {}".format(qTemp[1:]))
 
-        gripper = "0002"
+        gripper = "0100"
         if open_gripper:
-            gripper = "0002"
+            gripper = "0100"
 
         targetAngles = str(int(qTemp[1])).zfill(4) + str(int(qTemp[2])).zfill(4) + str(int(qTemp[3])).zfill(4) + gripper
         return str.encode(targetAngles)
@@ -658,13 +658,13 @@ class SerialLink:
                                                                                                      0]-1)) or k ==(
                                 len(self.blueprint[0][0]-1)):
                             color_index = 1
-                        if color_index == 1:
-                            color = vtk_named_colors(["DarkGreen"])
-                        elif color_index == 2:
-                            color = vtk_named_colors(["Red"])
-                        else:
-                            color = vtk_named_colors(["LightGreen"])
-
+                        # if color_index == 1:
+                        #     color = vtk_named_colors(["DarkGreen"])
+                        # elif color_index == 2:
+                        #     color = vtk_named_colors(["Red"])
+                        # else:
+                        #     color = vtk_named_colors(["LightGreen"])
+                        color = vtk_named_colors(["DarkGreen"])
                         actor_list.GetProperty().SetColor(color[0])  # (R,G,B)
                         actor_list.SetScale(0.013)
                         actor_list.SetPosition((i, j, k))
