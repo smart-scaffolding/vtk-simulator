@@ -252,7 +252,7 @@ class SerialLink:
         # return len(self.links)
         return 4
 
-    def send_to_robot(self, angle, delay=2.0, open_gripper=False):
+    def send_to_robot(self, angle, delay=2.0, gripper_control=None):
         """
         NOTE: Expects all angles to be in degrees
         Sends a single angle to robot and then delays for a certain amount of time
@@ -260,12 +260,12 @@ class SerialLink:
         :param angle: Expects angles in degrees
         :param delay: delay after sending to robot
         """
-        targetAngles = self.map_angles_to_robot(angle, open_gripper)
+        targetAngles = self.map_angles_to_robot(angle, gripper_control)
         self.serial.write(targetAngles)
         time.sleep(delay)
 
 
-    def map_angles_to_robot(self, q, open_gripper=False):
+    def map_angles_to_robot(self, q, open_gripper=None):
         """
         Creates a mapping between the angles used by the higher level code and the actual robot angles
 
@@ -279,7 +279,7 @@ class SerialLink:
 
         gripper = "0002"
         if open_gripper:
-            gripper = "0002"
+            gripper = "00"+ open_gripper
 
         targetAngles = str(int(qTemp[1])).zfill(4) + str(int(qTemp[2])).zfill(4) + str(int(qTemp[3])).zfill(4) + gripper
         return str.encode(targetAngles)
