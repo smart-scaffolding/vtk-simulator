@@ -11,9 +11,9 @@ accuracy = 1e-7
 threshold = 1
 # num_way_points = 2
 use_face_star = False
-animate = False
+animate = True
 move_both_end_effectors=True
-use_serial = True
+use_serial = False
 
 
 def main():

@@ -281,7 +281,7 @@ class SerialLink:
         if open_gripper:
             gripper = "0002"
 
-        targetAngles = str(int(qTemp[1])).zfill(4) + str(int(qTemp[2])).zfill(4) + str(int(qTemp[3])).zfill(4) + gripper
+        targetAngles = f'{q[1]:4.2f} '.zfill(8) + f'{q[2]:4.2f} '.zfill(8) + f'{q[3]:4.2f} '.zfill(8) + gripper
         return str.encode(targetAngles)
 
 
