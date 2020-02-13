@@ -13,15 +13,10 @@ threshold = 1
 use_face_star = False
 animate = True
 move_both_end_effectors=True
-<<<<<<< HEAD
-use_serial = True
 delay = 0.1
 num_steps = 7
-||||||| merged common ancestors
-use_serial = True
-=======
 use_serial = False
->>>>>>> f4174df572ed3080b33743e631c0bcd08c476c70
+
 
 robot_ee_starting_point = (2.5, 0.5, 1)
 def main():
