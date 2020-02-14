@@ -25,7 +25,7 @@ def main():
 
     robot = model.Inchworm(base=base, blueprint=blueprint)
     # robot.plot(np.asmatrix([0, 7, -13, -85]), unit="deg") # stretched out
-    q1 = np.array([0, 1.08030020e+00,  -2.16060041e+00, -4.89677758e-01]) * 180 / np.pi
+    q1 = np.array([0, 84.78,  -116.439, -58.29]) * np.pi / 180
 
 
 

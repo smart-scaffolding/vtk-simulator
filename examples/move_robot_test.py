@@ -5,17 +5,19 @@ import math
 from robopy.base.FaceStar import *
 from robopy.base.common import create_point_from_homogeneous_transform, flip_base, round_end_effector_position
 from robopy.base.graphics import AnimationUpdate
+from robopy.base.quintic_trajectory_planner import *
+from ikinQuickTest import *
 import time
 
 accuracy = 1e-7
 threshold = 1
 # num_way_points = 2
 use_face_star = False
-animate = False
+animate = True
 move_both_end_effectors=True
 delay = 0.1
-num_steps = 30 #old: 7
-use_serial = True
+num_steps = 100 #old: 7
+use_serial = False
 
 
 robot_ee_starting_point = (2.5, 0.5, 1)
@@ -40,7 +42,7 @@ def main():
     # robot.update_angles(np.array([0, 0, 0, -90]), unit="deg")
 
 
-    # robot.update_angles(np.array([0, 1.08030020e+00,  -2.16060041e+00, -4.89677758e-01])*180/np.pi)
+    robot.update_angles(np.array([1.61095456e-15,  6.18966422e+01, -1.23793284e+02, -2.80564688e+01]))
     # startFace = BlockFace(1, 0, 0, 'top')
     startFace = BlockFace(1, 1, 0, 'top')
     # endFace = BlockFace(3, 0, 0, 'top')
@@ -51,7 +53,7 @@ def main():
     # endFace= BlockFace(3, 2, 5, "left")
     # endFace = BlockFace(5, 0, 0, 'top')
 
-
+    resetEEStartingPoses()
 
     ik_motion, path, directions, animation_update = follow_path(robot, num_steps, offset=1,
                                                                          startFace=startFace,
@@ -71,6 +73,8 @@ def main():
     time.sleep(3)
 
     # robot.update_angles(np.array([0, 0, 0, -90]), unit="deg")
+    robot.update_angles(np.array([1.61095456e-15,  6.18966422e+01, -1.23793284e+02, -2.80564688e+01]))
+
     print("Path Length: {}".format(len(path[0][1:][0])))
     print("Path: {}".format(path))
     print("Num Steps: {}".format(num_steps))
@@ -150,14 +154,39 @@ def main():
         robot.animate(stances=ik_motion, frame_rate=30, unit='deg', num_steps=num_steps*3, orientation=robot_orientation,
                   showPath=True, showPlacedBlock=True, update=animation_update)
 
-def move_to_point(direction, point, robot, num_steps, previous_angles=None, flip_angles=False, accuracy=accuracy):
+def move_to_point(direction, point, robot, num_steps, previous_angles=None, flip_angles=False, accuracy=accuracy,
+                  previous_point=(0, 0, 0)):
     # print(point)
-    try:
-        ik_angles = robot.ikineConstrained(direction, point, flipped=flip_angles, accuracy=accuracy) * 180 / np.pi ## converted to degrees
-        # print(ik_angles)
+    x_initial = previous_point[0]
+    y_initial = previous_point[1]
+    z_initial = previous_point[2]
+    x_final = point[0]
+    y_final = point[1]
+    z_final = point[2]
 
-    except ValueError as e:
-        if accuracy >= threshold:
+    new_points, _ = get_quintic_trajectory(points=np.array([[x_initial, y_initial, z_initial],[x_final, y_final,
+                                                                                        z_final]]),
+                           set_points=num_steps)
+
+    forward_1 = []
+    forward_2 = []
+    forward_3 = []
+    forward_4 = []
+    for new_point in new_points:
+        try:
+            ik_angles = ikin(point, gamma=0, phi=0, baseID='A')*180/np.pi
+            # ik_angles = robot.ikineConstrained(direction, new_point, flipped=flip_angles, accuracy=accuracy) * 180 / np.pi ## converted to degrees
+            # print(ik_angles)
+            if ik_angles[0] <= 1 and ik_angles[0] > -1:
+                forward_1.append(0)
+            else:
+                forward_1.append(ik_angles[0])
+            forward_2.append(ik_angles[1])
+            forward_3.append(ik_angles[2])
+            forward_4.append(ik_angles[3])
+            robot.update_angles(ik_angles, unit="deg")
+        except ValueError as e:
+            # if accuracy >= threshold:
 
 
             print("\n\n")
@@ -172,25 +201,30 @@ def move_to_point(direction, point, robot, num_steps, previous_angles=None, flip
             print("\n\n")
             time.sleep(0.1)
             raise e
-        else:
-            print("IK Accuracy Too High, Lowering Value To: {}".format(accuracy))
-            return move_to_point(direction, point, robot, num_steps, previous_angles, flip_angles, accuracy * 10)
+            # else:
+            #     print("IK Accuracy Too High, Lowering Value To: {}".format(accuracy))
+            #     return move_to_point(direction, new_point, robot, num_steps, previous_angles, flip_angles, accuracy * 10,
+            #                          previous_point=previous_point)
 
 
-    if previous_angles is None:
-        previous_angles = [1.61095456e-15,  6.18966422e+01, -1.23793284e+02, -2.80564688e+01]
+    # if previous_angles is None:
+    #     previous_angles = [1.61095456e-15,  6.18966422e+01, -1.23793284e+02, -2.80564688e+01]
 
     # else:
     #     print("Previous Angles: {}".format(previous_angles))
-    forward_1 = np.transpose(np.asmatrix(np.linspace(float(previous_angles[0]), ik_angles[0], num_steps)))
-    forward_2 = np.transpose(np.asmatrix(np.linspace(float(previous_angles[1]), ik_angles[1], num_steps)))
-    forward_3 = np.transpose(np.asmatrix(np.linspace(float(previous_angles[2]), ik_angles[2], num_steps)))
-    forward_4 = np.transpose(np.asmatrix(np.linspace(float(previous_angles[3]), ik_angles[3], num_steps)))
+    # forward_1 = np.transpose(np.asmatrix(np.linspace(float(previous_angles[0]), ik_angles[0], num_steps)))
+    # forward_2 = np.transpose(np.asmatrix(np.linspace(float(previous_angles[1]), ik_angles[1], num_steps)))
+    # forward_3 = np.transpose(np.asmatrix(np.linspace(float(previous_angles[2]), ik_angles[2], num_steps)))
+    # forward_4 = np.transpose(np.asmatrix(np.linspace(float(previous_angles[3]), ik_angles[3], num_steps)))
 
-    ik_test = np.concatenate((forward_1, forward_2, forward_3, forward_4), axis=1)
+    forward_1 = np.asmatrix(forward_1)
+    forward_2 = np.asmatrix(forward_2)
+    forward_3 = np.asmatrix(forward_3)
+    forward_4 = np.asmatrix(forward_4)
+    ik_test = np.concatenate((forward_1, forward_2, forward_3, forward_4), axis=0)
     # if flip_angles:
     #     ik_test = np.concatenate((forward_1, forward_4, forward_3, forward_2), axis=1)
-    angle_update = ik_test[-1].flatten().tolist()[0]
+    angle_update = ik_test.transpose()[-1].flatten().tolist()[0]
     # angle_update = angle_update[0:3]
     robot.update_angles(angle_update, unit="deg")
     return ik_test
@@ -295,7 +329,7 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint, secondP
             #                                        move_to_point(direction, waypoint, robot, num_steps,
             #                                                      previous_angles_1[-1].flatten().tolist()[0])])
             #     else:
-            previous_angles_1 = move_to_point(direction, ee_up, robot, num_steps)
+            previous_angles_1 = move_to_point(direction, ee_up, robot, num_steps, previous_point=robot_ee_starting_point)
 
 
             # for waypoint in range(num_steps):
@@ -307,7 +341,7 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint, secondP
             stop_above = np.copy(point)
             stop_above = add_offset(stop_above, direction, offset)
             previous_angles_2 = move_to_point(direction, stop_above, robot, num_steps,
-                                                      previous_angles_1[-1].flatten().tolist()[0])
+                                                      previous_angles_1[-1].flatten().tolist()[0], previous_point=ee_up)
 
 
             # for waypoint in range(num_steps):
@@ -317,7 +351,7 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint, secondP
             #                                                      previous_angles_2[-1].flatten().tolist()[0])])
             #     else:
             previous_angles_3 = move_to_point(direction, point, robot, num_steps,
-                                                      previous_angles_2[-1].flatten().tolist()[0])
+                                                      previous_angles_2[-1].flatten().tolist()[0], previous_point=stop_above)
 
 
 
@@ -396,7 +430,8 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint, secondP
             #     if previous_angles_1 is not None:
             #         previous_angles_1 = np.vstack([previous_angles_1, move_to_point(previous_direction, waypoint, robot, num_steps, previous_angles_1[-1].flatten().tolist()[0], flip_angles=flip_angles)])
             #     else:
-            previous_angles_1 = move_to_point(previous_direction, ee_up, robot, num_steps, initial_angles, flip_angles=flip_angles)
+            previous_angles_1 = move_to_point(previous_direction, ee_up, robot, num_steps, initial_angles,
+                                              flip_angles=flip_angles, previous_point=previous_point)
 
             # stop_above_path = np.linspace(ee_up, stop_above, num_way_points)
 
@@ -405,7 +440,9 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint, secondP
             #         previous_angles_2 = np.vstack([previous_angles_2,
             #                                            move_to_point(direction, waypoint, robot, num_steps, previous_angles_2[-1].flatten().tolist()[0], flip_angles=flip_angles)])
             #     else:
-            previous_angles_2 = move_to_point(direction, stop_above, robot, num_steps, previous_angles_1[-1].flatten().tolist()[0], flip_angles=flip_angles)
+            previous_angles_2 = move_to_point(direction, stop_above, robot, num_steps, previous_angles_1[-1].flatten(
+
+            ).tolist()[0], flip_angles=flip_angles, previous_point=ee_up)
 
             # reach_point = np.linspace(stop_above, point, num_way_points)
             #
@@ -414,7 +451,9 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint, secondP
             #         previous_angles_3 = np.vstack([previous_angles_3,
             #                                            move_to_point(direction, waypoint, robot, num_steps, previous_angles_3[-1].flatten().tolist()[0], flip_angles=flip_angles)])
             #     else:
-            previous_angles_3 = move_to_point(direction, point, robot, num_steps, previous_angles_2[-1].flatten().tolist()[0], flip_angles=flip_angles)
+            previous_angles_3 = move_to_point(direction, point, robot, num_steps, previous_angles_2[-1].flatten(
+
+            ).tolist()[0], flip_angles=flip_angles, previous_point=stop_above)
 
             # previous_angles_3 = move_to_point(direction, point, robot, num_steps, previous_angles_2[-1].flatten().tolist()[0], flip_angles=flip_angles)
             # robot.update_angles(previous_angles_3[-1].flatten().tolist()[0], unit="rad")
@@ -444,8 +483,10 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint, secondP
 
 def update_path(save_path, new_motion_1, new_motion_2, new_motion_3):
     if save_path is None:
-        return np.concatenate((new_motion_1, new_motion_2, new_motion_3))
-    return np.concatenate((save_path, new_motion_1, new_motion_2, new_motion_3))
+        return np.concatenate((new_motion_1.reshape((4, num_steps)), new_motion_2.reshape((4, num_steps)),
+                               new_motion_3.reshape((4, num_steps))),
+                              axis=1).transpose()
+    return np.concatenate((save_path, new_motion_1, new_motion_2, new_motion_3), axis=1)
 
 def update_path_single(save_path, new_motion_1):
     return np.concatenate((save_path, new_motion_1))

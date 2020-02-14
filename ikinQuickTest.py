@@ -1,6 +1,7 @@
 from math import cos, sin, acos, asin, atan2, pi, sqrt
 import numpy as np
 from serial import Serial, PARITY_NONE, STOPBITS_ONE, EIGHTBITS
+from robopy.base.quintic_trajectory_planner import *
 import time
 
 DEBUG = False
@@ -87,7 +88,7 @@ def handlePlaneChanges(goalPos,gamma,baseID):
 
     # gets the relativePos, basePos, and baseOri in the global reference frame
     if baseID == 'A': # requested ee is A
-        relativePos = goalPos - AEEPOS
+        relativePos = np.array(goalPos) - AEEPOS
         baseOri = AEEORI
         basePos = AEEPOS
     elif baseID == 'D': # requested ee is D
@@ -171,8 +172,10 @@ def handlePlaneChanges(goalPos,gamma,baseID):
 
     # sets the goalPos and goalOri to the moving ee
     if baseID == 'A': # requested ee is A, update D to match goal
-        DEEPOS = goalPos
-        DEEORI = goalOri
+        # DEEPOS = goalPos
+        # DEEORI = goalOri
+        AEEPOS = np.array(goalPos)
+        AEEORI = goalOri
     elif baseID == 'D': # requested ee is D, update A to match goal
         AEEPOS = goalPos
         AEEORI = goalOri
@@ -237,15 +240,14 @@ def samePlane():
     resetEEStartingPoses()
     print('Same Plane')
 
-    pos0 = np.array([0,0,0])
-    pos1 = np.array([2,2,0,-pi/2,0]) # x, y, z, gamma, phi
+    pos0 = np.array([2,0,0])
+    pos1 = np.array([3,0,0,-pi/2,0]) # x, y, z, gamma, phi
     pos2 = np.array([1,4,0,-pi/2,0]) # x, y, z, gamma, phi
 
-    qA = ikin(goalPos=pos1[:3],gamma=pos1[3],phi=pos1[4],elbow_up=1,baseID='A')
-    print(f'Step one \n({pos0}) \nto \n({pos1}): \n\n{qA*180/pi}\n\n')
-
-    qD = ikin(goalPos=pos2[:3],gamma=pos2[3],phi=pos2[4],elbow_up=1,baseID='D')
-    print(f'Step two \n({pos1}) \nto \n({pos2}): \n\n{qD*180/pi}\n\n')
+    for waypoint in genWaypoints(pos0, pos1):
+        print(f'Step to \n({waypoint}):')
+        q = ikin(goalPos=np.array(waypoint[:3]), gamma=0, phi=0, elbow_up=1, baseID='A')
+        print(f'joint angles: {q * 180 / pi}\n\n')
 
 def changePlaneNInch():
     # 1. Save the current orientation and position of the both ee.
@@ -317,12 +319,15 @@ def performSteps(steps):
             start = APOSE
         for waypoint in genWaypoints(start,step):
             print(f'Step to \n({step[:3]}):')
-            q = ikin(goalPos=waypoint[:3],gamma=waypoint[3],phi=waypoint[4],elbow_up=step[5],baseID=baseID)
+            q = ikin(goalPos=waypoint[:3],gamma=start[3],phi=0,elbow_up=1,baseID=baseID)
             print(f'joint angles: {q*180/pi}\n\n')
             
 
 def genWaypoints(start, stop, N = STEP_SIZE, endpoint=True):
-    return np.linspace(start, stop, N)
+    return get_quintic_trajectory(np.array([[start[0], start[1], start[2]], [stop[0], stop[1], stop[2]]]),
+                                  set_points=N)[0]
+    #
+    # return np.linspace(start, stop, N)
 
 def send_to_robot(angle, delay=2.0):
     """
@@ -348,8 +353,8 @@ def map_angles_to_robot(q):
     targetAngles = f'{q[1]:4.2f} '.zfill(8) + f'{q[2]:4.2f} '.zfill(8) + f'{q[3]:4.2f} '.zfill(8) + gripperFiller
     return str.encode(targetAngles)
 
-def gripper_control(targetGripper, action):
-    if targetGripper == 'A'
+# def gripper_control(targetGripper, action):
+#     if targetGripper == 'A'
 
 
 # def gripper_control_commands(engage_gripper, disengage_gripper, flip_pid, toggle_gripper):
@@ -379,13 +384,13 @@ if __name__ == "__main__":
 
     # baseCheck()
 
-    # samePlane()
+    samePlane()
 
     # changePlaneNInch()
 
     # changePlaneNClimbXZ()
 
-    changePlaneNClimbYZ()
+    # changePlaneNClimbYZ()
 
     # convexCorner()
 
