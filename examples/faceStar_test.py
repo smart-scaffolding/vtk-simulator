@@ -12,6 +12,14 @@ threshold = 1
 # num_way_points = 2
 use_face_star = False
 
+# Serial variables
+USE_SERIAL = False
+SERIAL = None
+PORT='/dev/cu.usbmodem14201'
+BAUD = 9600
+TIMEOUT = 3.0
+JOINT_ANGLE_PKT_SIZE = 8
+
 def main():
     blueprint = np.array([
         [[1, 0, 0], [1, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [1, 1, 1]],
@@ -146,10 +154,11 @@ def move_to_point(direction, point, robot, num_steps, previous_angles=None, flip
         ik_angles = robot.ikineConstrained(direction, p=point, flipped=flip_angles, accuracy=accuracy) * 180 / np.pi ## converted to degrees
         # print(ik_angles)
 
+        gamma = temp_direction_to_gamma_convertion(direction)
+        ik_angles = robot.ikin(goalPos=point,gamma=gamma,phi=0,)
+
     except ValueError as e:
         if accuracy >= threshold:
-
-
             print("\n\n")
             print("\t\t" + "*"*50)
             print("\t\tUNABLE TO REACH POINT")
@@ -185,6 +194,20 @@ def move_to_point(direction, point, robot, num_steps, previous_angles=None, flip
     robot.update_angles(angle_update, unit="deg")
     return ik_test
 
+def temp_direction_to_gamma_convertion(direction):
+    if direction == "top":
+        return -np.pi/2
+    elif direction =="bottom":
+        return np.pi/2
+    elif direction == "left":
+        return 0
+    elif direction =="right":
+        return np.pi
+    elif direction == "front":
+        return 0
+    else:
+        return 0
+
 def follow_path(robot, num_steps, offset, startFace, endFace, blueprint, secondPosition=None):
     # path = [(3.5, 0.5, 1), (2.5, 0.5, 1), (3.5, 0.5, 1), (2.5, 0.5, 1), (3.5, 0.5, 1), (2.5, 0.5, 1), (3.5, 0.5, 1), (2.5, 0.5, 1)]
     # path = [(3.5, 1.5, 1), (1.5, 0.5, 1),(4.5, 0.5, 1), (2.5, 0.5, 1),(5.5, 0.5, 1), (3.5, 0.5, 1),(6.5, 0.5, 1), (4.5, 0.5, 1) ]
@@ -203,12 +226,9 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint, secondP
 
     # armReach = [1.5, 1.5]
 
-
     if use_face_star:
-
         faceStarPlanner = FaceStar(startFace, endFace, blueprint, armReach)
         path = faceStarPlanner.get_path()
-    # #
     global_path = []
     global_path.append((num_steps, path))
 
@@ -272,41 +292,13 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint, secondP
             previous_angles_1, previous_angles_2, previous_angles_3 = None, None, None
 
             ee_up = add_offset(ee_up, previous_direction, offset)
-
-            # divorce_wall = np.linspace(robot.end_effector_position().tolist()[0], move_up, num_way_points)
-
-            # for waypoint in divorce_wall:
-            #     if previous_angles_1 is not None:
-            #         previous_angles_1 = np.vstack([previous_angles_1,
-            #                                        move_to_point(direction, waypoint, robot, num_steps,
-            #                                                      previous_angles_1[-1].flatten().tolist()[0])])
-            #     else:
             previous_angles_1 = move_to_point(direction, ee_up, robot, num_steps)
-
-
-            # for waypoint in range(num_steps):
-            #     if previous_angles_2 is not None:
-            #         previous_angles_2 = np.vstack([previous_angles_2,
-            #                                        move_to_point(direction, point, robot, num_steps,
-            #                                                      previous_angles_2[-1].flatten().tolist()[0])])
-            #     else:
             stop_above = point
             previous_angles_2 = move_to_point(direction, point, robot, num_steps,
                                                       previous_angles_1[-1].flatten().tolist()[0])
 
-
-            # for waypoint in range(num_steps):
-            #     if previous_angles_3 is not None:
-            #         previous_angles_3 = np.vstack([previous_angles_3,
-            #                                        move_to_point(direction, point, robot, num_steps,
-            #                                                      previous_angles_2[-1].flatten().tolist()[0])])
-            #     else:
             previous_angles_3 = move_to_point(direction, point, robot, num_steps,
                                                       previous_angles_2[-1].flatten().tolist()[0])
-
-
-
-
 
         else:
             ee_pos = robot.end_effector_position()
@@ -324,7 +316,6 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint, secondP
                 initial_angles[3] = temp - 180 / 2
                 flip_angles = False
 
-                # global_path.append((num_steps * index, path[index:]))
             else:
                 new_base = flip_base(ee_pos, previous_direction, 180)
 
@@ -334,25 +325,14 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint, secondP
                 initial_angles[3] = temp - 180 / 2
                 flip_angles = True
 
-
-
             robot.base = new_base
             robot.update_angles(initial_angles, unit="deg")
 
-
-
-
-
-
-            # print("Initial Angles: {}".format(initial_angles))
-            # ee_pos = robot.end_effector_position()
             print("Previous Point: {}".format(previous_point))
             ee_pos = back_foot_pos
 
 
-            # ee_up = np.copy(ee_pos).tolist()[0]
             ee_up = np.copy(ee_pos)
-            # ee_up = round_end_effector_position(ee_up, direction, previous_point)
             print("Going to point: {}\t EE Pos: {}\tRounded Pos: {}".format(point, ee_pos, ee_up))
             print("\tPrevious Direction: {}".format(previous_direction))
 
@@ -362,12 +342,6 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint, secondP
                 flatten = lambda l: [item for sublist in l for item in sublist]
                 base_up = create_point_from_homogeneous_transform(update_animation[-1].robot_base).tolist()
                 base_up = flatten(base_up)
-
-                # if path[index - 1][-1] == path[index][-1]:
-                #     new_direction = path[index][-1]
-                # else:
-                #     new_direction = path[index - 1][-1]
-
                 ee_up = add_offset(base_up,
                                    previous_direction, offset, path[index - 2][-1],
                                    index=index, type="ee_up")
@@ -375,8 +349,6 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint, secondP
                 ee_up = add_offset(ee_up, previous_direction, offset, previous_point, index=index)
 
             stop_above = np.copy(point)
-
-
             stop_above = add_offset(stop_above, direction, offset)
 
             print("\t\t\tOffsets: \n\t\t\tEE Up: {}\n\t\t\tStop Above: {}".format(ee_up, stop_above))
@@ -387,38 +359,11 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint, secondP
 
 
             previous_angles_1, previous_angles_2, previous_angles_3 = None, None, None
-
-            # divorce_wall = np.linspace(ee_pos, ee_up, num_way_points)
-
-            # for waypoint in divorce_wall:
-            #     if previous_angles_1 is not None:
-            #         previous_angles_1 = np.vstack([previous_angles_1, move_to_point(previous_direction, waypoint, robot, num_steps, previous_angles_1[-1].flatten().tolist()[0], flip_angles=flip_angles)])
-            #     else:
             previous_angles_1 = move_to_point(previous_direction, ee_up, robot, num_steps, initial_angles, flip_angles=flip_angles)
-
-            # stop_above_path = np.linspace(ee_up, stop_above, num_way_points)
-
-            # for waypoint in stop_above_path:
-            #     if previous_angles_2 is not None:
-            #         previous_angles_2 = np.vstack([previous_angles_2,
-            #                                            move_to_point(direction, waypoint, robot, num_steps, previous_angles_2[-1].flatten().tolist()[0], flip_angles=flip_angles)])
-            #     else:
             previous_angles_2 = move_to_point(direction, stop_above, robot, num_steps, previous_angles_1[-1].flatten().tolist()[0], flip_angles=flip_angles)
-
-            # reach_point = np.linspace(stop_above, point, num_way_points)
-            #
-            # for waypoint in reach_point:
-            #     if previous_angles_3 is not None:
-            #         previous_angles_3 = np.vstack([previous_angles_3,
-            #                                            move_to_point(direction, waypoint, robot, num_steps, previous_angles_3[-1].flatten().tolist()[0], flip_angles=flip_angles)])
-            #     else:
             previous_angles_3 = move_to_point(direction, point, robot, num_steps, previous_angles_2[-1].flatten().tolist()[0], flip_angles=flip_angles)
 
-            # previous_angles_3 = move_to_point(direction, point, robot, num_steps, previous_angles_2[-1].flatten().tolist()[0], flip_angles=flip_angles)
-            # robot.update_angles(previous_angles_3[-1].flatten().tolist()[0], unit="rad")
-
         save_path = update_path(save_path, previous_angles_1, previous_angles_2, previous_angles_3)
-
         previous_point = point
         back_foot_pos = create_point_from_homogeneous_transform(robot.base).flatten().tolist()[0]
         print("BACK FOOT: {}".format(back_foot_pos))
@@ -428,11 +373,6 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint, secondP
         else:
             direction = path[index-1][-1]
 
-        # if index == 11 and secondPosition == 0:
-        #     update_animation.append(
-        #         AnimationUpdate(robot=robot, robot_base=robot.base, direction=direction, path=path[index:], index=index,
-        #                         trajectory=[ee_up, stop_above, point], placedObstacle=True, obstacle=[6, 0, 0]))
-        # else:
         update_animation.append(AnimationUpdate(robot=robot, robot_base=robot.base, direction=direction, path=path[index:], index=index, trajectory=[ee_up, stop_above, point]))
 
     update_animation.append(

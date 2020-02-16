@@ -123,7 +123,7 @@ def handlePlaneChanges(goalPos,gamma,baseID):
 
     # updates goal orientation and 
     # switches gamma value from global reference frame to local reference frame
-    if gamma == -pi/2: # goal ee will be facing down
+    if gamma == -pi/2: # goal ee will be facing down (on top face)
         goalOri = np.array([0,0,1]).T
         if baseOri[2] == 1: # base ee down
             pass
@@ -131,7 +131,7 @@ def handlePlaneChanges(goalPos,gamma,baseID):
             localGamma = -gamma
         else: # base ee horizontal
             localGamma = 0
-    elif gamma == pi/2: # goal ee will be facing up
+    elif gamma == pi/2: # goal ee will be facing up (on bottom face)
         goalOri = np.array([0,0,-1]).T
         if baseOri[2] == 1: # base ee down
             pass
@@ -140,21 +140,22 @@ def handlePlaneChanges(goalPos,gamma,baseID):
         else: # base ee horizontal
             localGamma = 0
     elif gamma == 0 or gamma == -pi: # goal ee horizontal
-        if armFacing == 0 or armFacing == pi: # goal ee facing right (positive X)
+        ## TODO: goal ee comments are mixed up, clean up later
+        if armFacing == 0 or armFacing == pi: 
             if gamma == 0:
-                goalOri = np.array([-1,0,0]).T
+                goalOri = np.array([-1,0,0]).T # goal ee facing left (negative X, on right face)
             else:
-                goalOri = np.array([1,0,0]).T
-        elif armFacing == -pi: # goal ee facing left (negative X)
+                goalOri = np.array([1,0,0]).T # goal ee facing right (positive X, on left face)
+        elif armFacing == -pi: 
             if gamma == 0:
-                goalOri = np.array([1,0,0]).T
+                goalOri = np.array([1,0,0]).T # goal ee facing right (positive X, on left face)
             else:
-                goalOri = np.array([-1,0,0]).T
-        elif armFacing == pi/2: # goal ee facing back (positive Y)
+                goalOri = np.array([-1,0,0]).T # goal ee facing left (negative X, on right face)
+        elif armFacing == pi/2: 
             if gamma == 0:
-                goalOri = np.array([0,-1,0]).T
+                goalOri = np.array([0,-1,0]).T # goal ee facing back (positive Y)
             else:
-                goalOri = np.array([0,1,0]).T
+                goalOri = np.array([0,1,0]).T # goal ee facing back (positive Y)
         elif armFacing == -pi/2: # goal ee facing front (negative Y)
             if gamma == 0:
                 goalOri = np.array([0,1,0]).T
@@ -232,7 +233,7 @@ def baseCheck():
 
     qA = ikin(goalPos=pos1[:3],gamma=pos1[3],phi=pos1[4],elbow_up=1,baseID='A')
     print(f'Step one \n({pos0}) \nto \n({pos1}): \n\n{qA*180/pi}\n\n')
-    
+
 def samePlane():
     resetEEStartingPoses()
     print('Same Plane')
@@ -320,7 +321,6 @@ def performSteps(steps):
             q = ikin(goalPos=waypoint[:3],gamma=waypoint[3],phi=waypoint[4],elbow_up=step[5],baseID=baseID)
             print(f'joint angles: {q*180/pi}\n\n')
             
-
 def genWaypoints(start, stop, N = STEP_SIZE, endpoint=True):
     return np.linspace(start, stop, N)
 
@@ -349,8 +349,12 @@ def map_angles_to_robot(q):
     return str.encode(targetAngles)
 
 def gripper_control(targetGripper, action):
-    if targetGripper == 'A'
-
+    if targetGripper == 'A':
+        targetGripper = 1
+    elif targetGripper == 'D':
+        targetGripper = 2
+    elif targetGripper == 'Z':
+        targetGripper = 2
 
 # def gripper_control_commands(engage_gripper, disengage_gripper, flip_pid, toggle_gripper):
 
