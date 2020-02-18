@@ -3,7 +3,7 @@ import numpy as np
 from serial import Serial, PARITY_NONE, STOPBITS_ONE, EIGHTBITS
 import time
 
-DEBUG = False
+DEBUG = True
 
 # Robot state variables
 AEEPOS = None
@@ -31,6 +31,10 @@ JOINT_ANGLE_PKT_SIZE = 8
 # inputs should be in the global reference frame
 def ikin(goalPos,gamma,phi,baseID,elbow_up=1):
     global AEEPOS, AEEORI, DEEPOS, DEEORI
+
+    if DEBUG:
+        print(f'(Ikin)goalPos:{goalPos} Gamma:{gamma} Phi:{phi} baseID:{baseID}')
+
     # Robot Parameters
     L1 = 4.125 # L1 in inches
     L2 = 6.43 # L2 in inches
@@ -40,9 +44,10 @@ def ikin(goalPos,gamma,phi,baseID,elbow_up=1):
     x,y,z = relativePos * blockWidth
 
     if DEBUG: 
-        print(f'x y z is {x} {y} {z}')
-        print(f'gamma is: {gamma}')
-        print(f'localGamma is : {localGamma}')
+        print(f'x y z: {x} {y} {z}')
+        print(f'gamma: {gamma}')
+        print(f'localGamma: {localGamma}')
+        print(f'relativePos: {relativePos}')
 
     q1 = atan2(y,x) # joint1 angle
     # print(f'q1 is {q1*180/pi}')
@@ -82,8 +87,9 @@ def handlePlaneChanges(goalPos,gamma,baseID):
     basePos = np.zeros(3)
     goalOri = np.zeros(3)
 
-    if DEBUG: 
-        print(f'baseID: {baseID}')
+    # if DEBUG:
+        # print(f'Pre plane handling:\n AEE_POSE: {AEE_POSE}')
+        # print(f'DEE POS: {DEE_POSE}')
 
     # gets the relativePos, basePos, and baseOri in the global reference frame
     if baseID == 'A': # requested ee is A
@@ -309,6 +315,14 @@ def convexCorner(): #
     steps.append(np.array([-2,0,-1,0,0,1,1]))
     performSteps(steps)
 
+def followPath():
+    print('Follow path')
+    resetEEStartingPoses()
+    steps = []
+    steps.append(np.array([3.5, 0.5, 2.0,-pi/2,0,1,0])) # x, y, z, gamma, phi, elbow(1 for up 0 for down), requestedBase(0 for 'A'; 1 for 'D')
+    steps.append(np.array([3.5, 0.5, 1,-pi/2,0,1,0]))
+    performSteps(steps)
+
 def performSteps(steps):
     for step in steps:
         baseID = 'A'
@@ -316,7 +330,7 @@ def performSteps(steps):
         if step[6] == 1:
             baseID = 'D'
             start = APOSE
-        for waypoint in genWaypoints(start,step):
+        for waypoint in genWaypoints(start,step[:6]):
             print(f'Step to \n({step[:3]}):')
             q = ikin(goalPos=waypoint[:3],gamma=waypoint[3],phi=waypoint[4],elbow_up=step[5],baseID=baseID)
             print(f'joint angles: {q*180/pi}\n\n')
@@ -356,24 +370,6 @@ def gripper_control(targetGripper, action):
     elif targetGripper == 'Z':
         targetGripper = 2
 
-# def gripper_control_commands(engage_gripper, disengage_gripper, flip_pid, toggle_gripper):
-
-#     if engage_gripper:
-#         gripper_control = "0"
-#     elif disengage_gripper:
-#         gripper_control = "1"
-#     else:
-#         gripper_control = "2"  # stop gripper (idle)
-
-#     pid = "1" if flip_pid else "0"
-#     select_gripper = "0"
-#     if toggle_gripper:
-#         if select_gripper == "0":
-#             select_gripper = "1"
-#         else:
-#             select_gripper = "0"
-
-#     return "0" + pid + select_gripper + gripper_control
 
 if __name__ == "__main__":
 
@@ -389,13 +385,14 @@ if __name__ == "__main__":
 
     # changePlaneNClimbXZ()
 
-    changePlaneNClimbYZ()
+    # changePlaneNClimbYZ()
 
     # convexCorner()
+
+    followPath()
 
     # steps = []
     # steps.append(np.array([2,0,1,0,0,1,0]))
     # steps.append(np.array([4,0,2,-pi/2,0,0,1]))
     # resetEEStartingPoses()
     # performSteps(steps)
-    

@@ -62,11 +62,18 @@ class Inchworm(SerialLink):
         seg_lens = np.array([1.04775, 1.632966, 1.632966, 1.04775])*1.3
         # seg_lens = np.array([1.375, 2.143, 1.375, 2.143])
 
+        # Original model
         links = [Revolute(d=seg_lens[0], a=0, alpha=pi/2, j=0, theta=0, offset=0, qlim=(0, 0), length=seg_lens[0]),
                  Revolute(d=0, a=seg_lens[1], alpha=0, j=0, theta=0, offset=0, qlim=(0, 0), length=seg_lens[1]),
                  Revolute(d=0, a=seg_lens[2], alpha=0, j=0, theta=0, offset=0, qlim=(-180 * pi / 180, 180 * pi / 180), length=seg_lens[2]),
                  Revolute(d=0, a=seg_lens[3], alpha=0, j=0, theta=0, offset=0, qlim=(-180 * pi / 180, 180 * pi / 180), length=seg_lens[3]),
                  ]
+
+        # links = [Revolute(d=0, a=seg_lens[0], alpha=0, j=0, theta=0, offset=0, qlim=(0, 0), length=seg_lens[0]),
+        #          Revolute(d=0, a=seg_lens[1], alpha=0, j=0, theta=0, offset=0, qlim=(0, 0), length=seg_lens[1]),
+        #          Revolute(d=0, a=seg_lens[2], alpha=0, j=0, theta=0, offset=0, qlim=(-180 * pi / 180, 180 * pi / 180), length=seg_lens[2]),
+        #          Revolute(d=0, a=seg_lens[3], alpha=0, j=0, theta=0, offset=0, qlim=(-180 * pi / 180, 180 * pi / 180), length=seg_lens[3]),
+        #          ]
 
         if base is None:
             base = tr.trotx(-90, unit='deg')

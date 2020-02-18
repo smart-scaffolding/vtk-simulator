@@ -22,7 +22,8 @@ from scipy.spatial.transform import Rotation as R
 from serial import Serial, PARITY_NONE, STOPBITS_ONE, EIGHTBITS
 import time
 import random
-from math import cos, sin, atan2, acos, asin
+from math import cos, sin, atan2, acos, asin, sqrt
+from scipy.spatial.transform import Rotation as R
 
 class SerialLink:
     """
@@ -91,12 +92,11 @@ class SerialLink:
         else:
             self.serial = None
 
-        self.DEBUG = False
+        self.DEBUG = True
         # Robot state variables
-        self.AEEPOS = None
-        self.AEEORI = None
-        self.DEEPOS = None
-        self.DEEORI = None
+        self.AEE_POSE = None
+        self.DEE_POSE = None
+        self.resetEEStartingPoses()
 
     time.sleep(2)
 
@@ -479,21 +479,27 @@ class SerialLink:
 
     # Units: inches, radians
     # inputs should be in the global reference frame
-    def ikin(self,goalPos,gamma,phi,baseID,elbow_up=1):
+    def ikin(self,goalPos, gamma, phi, baseID, simHuh = False, elbow_up=1):
+
+        if self.DEBUG:
+            print(f'(Ikin)goalPos:{goalPos} Gamma:{gamma} Phi:{phi} baseID:{baseID}')
         # Robot Parameters
         L1 = 4.125 # L1 in inches
         L2 = 6.43 # L2 in inches
-        blockWidth = 3
+        blockWidth = 3            
         
         relativePos, localGamma = self.handlePlaneChanges(goalPos=goalPos,gamma=gamma,baseID=baseID)
-        x,y,z = relativePos * blockWidth
+        x,y,z,dummy = relativePos * blockWidth # dummy value should always 1
 
         if self.DEBUG: 
-            print(f'x y z is {x} {y} {z}')
-            print(f'gamma is: {gamma}')
-            print(f'localGamma is : {localGamma}')
+            print(f'x y z: {x} {y} {z}')
+            print(f'gamma: {gamma}')
+            print(f'localGamma: {localGamma}')
+            print(f'relativePos: {relativePos}')
 
         q1 = atan2(y,x) # joint1 angle
+        if q1 < -179.8:
+            q1 = 0
 
         new_z = z - L1 # take away the height of the first link (vertical) 
         new_x = x/cos(q1)
@@ -513,140 +519,175 @@ class SerialLink:
 
         q4 = (localGamma - pi/2 + q2 + q3)*-1
         q5 = phi - q1
-        q = []
+        q = np.array([q1,q2,q3,q4,q5])
 
         # check which ee is requested and flip angles accordingly
-        if baseID == 'A':
-            q = np.array([q1,q2,q3,q4,q5])
-        elif baseID == 'D':
-            q = np.array([q5,q4,q3,q2,q1])
+        if not simHuh:
+            if baseID == 'D':
+                q = np.array([q5,q4,q3,q2,q1])
+
+        if self.DEBUG:
+            print(f'ikin output q: {q}\n\n')
         return q
 
-    def handlePlaneChanges(self,goalPos,gamma,baseID,):
+    def handlePlaneChanges(self,goalPos,gamma,baseID):
+
+        if self.DEBUG:
+            print(f'Pre plane handling:\n AEE_POSE: {self.AEE_POSE}')
+            print(f'DEE POS: {self.DEE_POSE}')
+
         relativePos = np.zeros(3)
         baseOri = np.zeros(3)
         basePos = np.zeros(3)
-        goalOri = np.zeros(3)
-
-        if self.DEBUG: 
-            print(f'baseID: {baseID}')
+        goalRot = np.zeros(3)
 
         # gets the relativePos, basePos, and baseOri in the global reference frame
         if baseID == 'A': # requested ee is A
-            relativePos = goalPos - self.AEEPOS
-            baseOri = self.AEEORI
-            basePos = self.AEEPOS
+            basePos = self.AEE_POSE[:3,3].T
+            baseOri = R.from_matrix(self.AEE_POSE[:3,:3]).as_euler('xyz',degrees=True)
         elif baseID == 'D': # requested ee is D
-            relativePos = goalPos - self.DEEPOS
-            baseOri = self.DEEORI
-            basePos = self.DEEPOS
+            basePos = self.DEE_POSE[:3,3].T
+            baseOri = R.from_matrix(self.DEE_POSE[:3,:3]).as_euler('xyz',degrees=True)
+        
+        relativePos = np.append(goalPos - basePos,[1])
+
+        # print(f'AEE_POSE {self.AEE_POSE}')
+        # print(f'DEE_POSE {self.DEE_POSE}')
+        # print(f'goalPos {goalPos}')
+        # print(f'basePos {basePos}')
+        # print(f'relativePos {relativePos}')
 
         # the angle which the arm is extending towards from base ee
         # in global reference frame
-        # !! This needs to be done before relativePos switched into local frame
+        # !! This needs to be done before switching relativePos into local frame
         armFacing = atan2(relativePos[1],relativePos[0])
-        if DEBUG: 
+        if self.DEBUG: 
             print(f'relativePos: {relativePos}')
             print(f'armFacing: {armFacing}')
 
         # rotates relativePos from global reference frame to local reference frame
-        if baseOri[0] == 1: # local +z facing global +x, rotate -90 around y
+        if baseOri[0] > 0.1: # local +z facing global +x, rotate -90 around y
             relativePos = np.dot(self.getRy(-pi/2),relativePos)
-        elif baseOri[0] == -1: # local +z facing global -x, rotate 90 around y
+        elif baseOri[0] < -0.1: # local +z facing global -x, rotate 90 around y
             relativePos = np.dot(self.getRy(pi/2),relativePos)
-        elif baseOri[1] == 1: # local +z facing global +y, rotate 90 around x
+        elif baseOri[1] > 0.1: # local +z facing global +y, rotate 90 around x
             relativePos = np.dot(self.getRx(pi/2),relativePos)
-        elif baseOri[1] == -1: # local +z facing global -y, rotate -90 around x
+        elif baseOri[1] < -0.1: # local +z facing global -y, rotate -90 around x
             relativePos = np.dot(self.getRx(-pi/2),relativePos)
-        elif baseOri[2] == 1: # local +z facing global +z, do nothing
+        elif baseOri[2] > 0.1: # local +z facing global +z, do nothing
             pass
-        elif baseOri[2] == -1: # local +z facing global -z, rotate 180 around y
+        elif baseOri[2] < -0.1: # local +z facing global -z, rotate 180 around y
             relativePos = np.dot(self.getRy(pi),relativePos)
 
-        if DEBUG: 
+        if self.DEBUG: 
             print(f'relativePos in local frame: {relativePos}')
         localGamma = gamma
 
         # updates goal orientation and 
         # switches gamma value from global reference frame to local reference frame
         if gamma == -pi/2: # goal ee will be facing down
-            goalOri = np.array([0,0,1]).T
-            if baseOri[2] == 1: # base ee down
+            # goalRot = np.array([0,0,1,0]).T
+            goalRot = self.getRz(pi/2)
+            if baseOri[2] > 0.1: # base ee down
                 pass
-            elif baseOri[2] == -1: # base ee up
+            elif baseOri[2] < -0.1: # base ee up
                 localGamma = -gamma
             else: # base ee horizontal
                 localGamma = 0
         elif gamma == pi/2: # goal ee will be facing up
-            goalOri = np.array([0,0,-1]).T
-            if baseOri[2] == 1: # base ee down
+            # goalRot = np.array([0,0,-1,0]).T
+            goalRot = self.getRz(-pi/2)
+            if baseOri[2] > 0.1: # base ee down
                 pass
-            elif baseOri[2] == -1: # base ee up
+            elif baseOri[2] < -0.1: # base ee up
                 localGamma = -gamma
             else: # base ee horizontal
                 localGamma = 0
         elif gamma == 0 or gamma == -pi: # goal ee horizontal
             if armFacing == 0 or armFacing == pi: # goal ee facing right (positive X)
                 if gamma == 0:
-                    goalOri = np.array([-1,0,0]).T
+                    # goalRot = np.array([-1,0,0,0]).T
+                    goalRot = self.getRx(-pi/2)
                 else:
-                    goalOri = np.array([1,0,0]).T
+                    # goalRot = np.array([1,0,0,0]).T
+                    goalRot = self.getRx(pi/2)
             elif armFacing == -pi: # goal ee facing left (negative X)
                 if gamma == 0:
-                    goalOri = np.array([1,0,0]).T
+                    # goalRot = np.array([1,0,0,0]).T
+                    goalRot = self.getRx(pi/2)
                 else:
-                    goalOri = np.array([-1,0,0]).T
+                    # goalRot = np.array([-1,0,0,0]).T
+                    goalRot = self.getRx(-pi/2)
             elif armFacing == pi/2: # goal ee facing back (positive Y)
                 if gamma == 0:
-                    goalOri = np.array([0,-1,0]).T
+                    # goalRot = np.array([0,-1,0,0]).T
+                    goalRot = self.getRy(-pi/2)
                 else:
-                    goalOri = np.array([0,1,0]).T
+                    # goalRot = np.array([0,1,0,0]).T
+                    goalRot = self.getRy(pi/2)
             elif armFacing == -pi/2: # goal ee facing front (negative Y)
                 if gamma == 0:
-                    goalOri = np.array([0,1,0]).T
+                    # goalRot = np.array([0,1,0,0]).T
+                    goalRot = self.getRy(pi/2)
                 else:
-                    goalOri = np.array([0,-1,0]).T
-            
-            if baseOri[2] != 0: # base ee down or up
+                    # goalRot = np.array([0,-1,0,0]).T
+                    goalRot = self.getRy(-pi/2)
+                    
+            if baseOri[2] > 0.1 or baseOri[2] < -0.1: # base ee down or up
                 pass
             else: # base ee horizontal
-                if baseOri.all() != goalOri.all():
+                #TODO: test if using all() would work
+                # if baseOri.all() != goalRot.all(): 
+                if baseOri.all() != R.from_matrix(goalRot[:3]).as_euler('xyz',degrees=True): 
                     localGamma = pi/2
                 else:
                     localGamma = -pi/2
 
         # sets the goalPos and goalOri to the moving ee
         if baseID == 'A': # requested ee is A, update D to match goal
-            DEEPOS = goalPos
-            DEEORI = goalOri
+            # DEEPOS = goalPos
+            # DEEORI = goalOri
+            self.DEE_POSE[:3,3] = np.array(goalPos)
+            self.DEE_POSE[:3,:3] = goalRot[:3,:3]
         elif baseID == 'D': # requested ee is D, update A to match goal
-            AEEPOS = goalPos
-            AEEORI = goalOri
+            # AEEPOS = goalPos
+            # AEEORI = goalOri
+            self.AEE_POSE[:3,3] = np.array(goalPos)
+            self.AEE_POSE[:3,:3] = goalRot[:3,:3]
 
-        if DEBUG: 
-            print(f'AEEPOS: {AEEPOS}')
-            print(f'AEEORI: {AEEORI}')
-            print(f'DEEPOS: {DEEPOS}')
-            print(f'DEEORI: {DEEORI}\n')
-        return relativePos.T, localGamma
+        if self.DEBUG: 
+            print(f'Post plane handling:\n AEE_POSE: {self.AEE_POSE}')
+            print(f'DEE POS: {self.DEE_POSE}')
+        return relativePos, localGamma
 
     def getRx(self,theta):
-        T = np.eye(3)
-        T[1,:] = [0,cos(theta),-sin(theta)]
-        T[2,:] = [0,sin(theta),cos(theta)]
+        T = np.eye(4)
+        T[1,:] = [0,cos(theta),-sin(theta),0]
+        T[2,:] = [0,sin(theta),cos(theta),0]
         return T
 
     def getRy(self,theta):
-        T = np.eye(3)
-        T[0,:] = [cos(theta),0,sin(theta)]
-        T[2,:] = [-sin(theta),0,cos(theta)]
+        T = np.eye(4)
+        T[0,:] = [cos(theta),0,sin(theta),0]
+        T[2,:] = [-sin(theta),0,cos(theta),0]
         return T
 
     def getRz(self,theta):
-        T = np.eye(3)
-        T[0,:] = [cos(theta),-sin(theta),0]
-        T[1,:] = [sin(theta),cos(theta),0]
+        T = np.eye(4)
+        T[0,:] = [cos(theta),-sin(theta),0,0]
+        T[1,:] = [sin(theta),cos(theta),0,0]
         return T
+
+    def resetEEStartingPoses(self):
+        # self.AEEPOS = np.array([0,0,0]).T
+        # self.AEEORI = np.array([0,0,1]).T
+        # self.DEEPOS = np.array([2,0,0]).T
+        # self.DEEORI = np.array([0,0,1]).T
+        self.AEE_POSE = np.matmul(np.array(np.eye(4)),self.getRz(np.pi/2))
+        self.DEE_POSE = np.matmul(np.array(np.eye(4)),self.getRz(np.pi/2))
+        # x y z position
+        self.AEE_POSE[:,3] = np.array([0.5,0.5,1,1])
+        self.DEE_POSE[:,3] = np.array([2.5,0.5,1,1])
 
     def jacob0(self, q=None):
         """Calculates the jacobian in the world frame by finding it in
