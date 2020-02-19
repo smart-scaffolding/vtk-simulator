@@ -282,7 +282,7 @@ class SerialLink:
             gripper = "00"+ open_gripper
 
         targetAngles = f'{qTemp[1]:4.2f} '.zfill(8) + f'{qTemp[2]:4.2f} '.zfill(8) + f'{qTemp[3]:4.2f} '.zfill(8) + \
-                       gripper
+                       gripper + '\n'
         print(targetAngles)
         return str.encode(targetAngles)
 
