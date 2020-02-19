@@ -3,6 +3,7 @@ import numpy as np
 import robopy.base.transforms as tr
 import math
 from robopy.base.FaceStar import *
+from robopy.base.quintic_trajectory_planner import *
 from robopy.base.common import create_point_from_homogeneous_transform, flip_base, round_end_effector_position
 from robopy.base.graphics import AnimationUpdate
 import time
@@ -11,6 +12,7 @@ accuracy = 1e-7
 threshold = 1
 # num_way_points = 2
 use_face_star = False
+num_steps = 10
 
 # Serial variables
 USE_SERIAL = False
@@ -32,7 +34,6 @@ def main():
         [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]
     ])
 
-
     #playground
     blueprint = np.array([
         [[1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0]],
@@ -50,8 +51,6 @@ def main():
 
     robot = model.Inchworm(base=base, blueprint=blueprint)
 
-    num_steps = 20
-
     # startFace = BlockFace(1, 0, 0, 'top')
     startFace = BlockFace(5, 1, 3, 'top')
     # endFace = BlockFace(5, 2, 3, 'top')
@@ -62,14 +61,12 @@ def main():
     # endFace= BlockFace(3, 2, 5, "left")
     endFace = BlockFace(1, 0, 0, 'top')
 
-
     ik_motion, path, directions, animation_update = follow_path(robot, num_steps, offset=1,
                                                                          startFace=startFace,
                                                                     endFace=endFace, blueprint=blueprint,
                                                                                 )
 
     robot = model.Inchworm(base=base, blueprint=blueprint)
-
 
     print("Path Length: {}".format(len(path[0][1:][0])))
     print("Path: {}".format(path))
@@ -97,55 +94,80 @@ def main():
                   showPath=True, showPlacedBlock=True, update=animation_update)
 
 def move_to_point(direction, point, robot, num_steps, baseID, previous_angles=None, accuracy=accuracy):
-    # print(point)
-    try:
-        # ik_angles = robot.ikineConstrained(direction, p=point, flipped=flip_angles, accuracy=accuracy) * 180 / np.pi ## converted to degrees
-        # print(ik_angles)
-        gamma = temp_direction_to_gamma_convertion(direction)
-        ik_angles = robot.ikin(goalPos=point,gamma=gamma,phi=0,baseID=baseID,simHuh=True)
-        ik_angles = map_angles_from_robot_to_simulation(ik_angles)
-        print(f'ik_angles {ik_angles}')
 
-    except ValueError as e:
-        if accuracy >= threshold:
-            print("\n\n")
-            print("\t\t" + "*"*50)
-            print("\t\tUNABLE TO REACH POINT")
-            print("\t\t" + "*"*50)
-            print("\t\tRobot Base: {}".format(np.transpose(create_point_from_homogeneous_transform(robot.base))))
-            print("\t\tRobot EE Pos: {}".format(robot.end_effector_position()))
-            print("\t\tRobot Angles: {}".format(robot.get_current_joint_config(unit="deg")))
-            print("\t\tGoing to Point: {} \t Face: {}".format(point, direction))
-            print("\t\t" + "*"*50)
-            print("\n\n")
-            time.sleep(0.1)
-            raise e
-        else:
-            print("IK Accuracy Too High, Lowering Value To: {}".format(accuracy))
-            return move_to_point(direction, point, robot, num_steps, baseID, previous_angles, accuracy * 10)
+    if baseID == 'A':
+        basePos = robot.DEE_POSE[:3,3]
+    else:
+        basePos = robot.AEE_POSE[:3,3]
 
-    if previous_angles is None:
-        previous_angles = [1] * robot.length
+    setPoints, _ = get_quintic_trajectory(points=np.array([basePos,point]), set_points=num_steps)
 
-    # TODO: refactor the code
-    # Temporary fix for base flipping
-    if baseID == 'D':
-        ik_angles[0] = ik_angles[0] - 180
+    forward_1 = []
+    forward_2 = []
+    forward_3 = []
+    forward_4 = []
 
-    forward_1 = np.transpose(np.asmatrix(np.linspace(float(previous_angles[0]), ik_angles[0], num_steps)))
-    forward_2 = np.transpose(np.asmatrix(np.linspace(float(previous_angles[1]), ik_angles[1], num_steps)))
-    forward_3 = np.transpose(np.asmatrix(np.linspace(float(previous_angles[2]), ik_angles[2], num_steps)))
-    forward_4 = np.transpose(np.asmatrix(np.linspace(float(previous_angles[3]), ik_angles[3], num_steps)))
+    for point in setPoints:
+        try:
+            # ik_angles = robot.ikineConstrained(direction, p=point, flipped=flip_angles, accuracy=accuracy) * 180 / np.pi ## converted to degrees
+            # print(ik_angles)
+            gamma = temp_direction_to_gamma_convertion(direction)
+            ik_angles = robot.ikin(goalPos=point,gamma=gamma,phi=0,baseID=baseID,simHuh=True)
+            ik_angles = map_angles_from_robot_to_simulation(ik_angles)
 
-    ik_angles = np.concatenate((forward_1, forward_2, forward_3, forward_4), axis=1)
+            # TODO: refactor the code
+            # Temporary fix for base flipping
+            if baseID == 'D':
+                ik_angles[0] = ik_angles[0] - 180
 
-    # if flip_angles:
-    #     ik_test = np.concatenate((forward_1, forward_4, forward_3, forward_2), axis=1)
-    angle_update = ik_angles[-1].flatten().tolist()[0]
-    # angle_update = ik_angles
-    robot.update_angles(angle_update, unit="deg")
+            forward_1.append(ik_angles[0])
+            forward_2.append(ik_angles[1])
+            forward_3.append(ik_angles[2])
+            forward_4.append(ik_angles[3])
+            # print(f'each ik_angle {ik_angles}')
 
-    return ik_angles
+        except ValueError as e:
+            if accuracy >= threshold:
+                print("\n\n")
+                print("\t\t" + "*"*50)
+                print("\t\tUNABLE TO REACH POINT")
+                print("\t\t" + "*"*50)
+                print("\t\tRobot Base: {}".format(np.transpose(create_point_from_homogeneous_transform(robot.base))))
+                print("\t\tRobot EE Pos: {}".format(robot.end_effector_position()))
+                print("\t\tRobot Angles: {}".format(robot.get_current_joint_config(unit="deg")))
+                print("\t\tGoing to Point: {} \t Face: {}".format(point, direction))
+                print("\t\t" + "*"*50)
+                print("\n\n")
+                time.sleep(0.1)
+                raise e
+            else:
+                print("IK Accuracy Too High, Lowering Value To: {}".format(accuracy))
+                return move_to_point(direction, point, robot, num_steps, baseID, previous_angles, accuracy * 10)
+
+        if previous_angles is None:
+            previous_angles = [1] * robot.length
+
+        # if flip_angles:
+        #     ik_test = np.concatenate((forward_1, forward_4, forward_3, forward_2), axis=1)
+        # angle_update = ik_angles[-1].flatten().tolist()[0]
+        angle_update = ik_angles
+        print(f'angle_update {angle_update}')
+        # angle_update = ik_angles
+        robot.update_angles(angle_update, unit="deg")
+
+    forward_1 = np.asmatrix(forward_1)
+    forward_2 = np.asmatrix(forward_2)
+    forward_3 = np.asmatrix(forward_3)
+    forward_4 = np.asmatrix(forward_4)
+
+    # print(f'forward_1 {forward_1}')
+    # print(f'forward_2 {forward_2}')
+    # print(f'forward_3 {forward_3}')
+    # print(f'forward_4 {forward_4}')
+
+    ik_angles = np.concatenate((forward_1, forward_2, forward_3, forward_4), axis=0)
+    print(f'ik_angles {ik_angles}')
+    return ik_angles.T
 
 def map_angles_from_robot_to_simulation(angles):
     angles = angles * 180 / np.pi
@@ -172,7 +194,9 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint, secondP
     if not use_face_star:
         # path = [(1, 2, 0, "top"), (0, 2, 0, "top"), (3, 2, 3, "left"), (3, 2, 2, "left"), (3, 2, 5, "left"), (3, 2, 4,"left"), (3, 2, 6, "left"), (3, 2, 5, "left") ]
         # path = [(1, 2, 0, "top"), (0, 2, 0, "top"), (3, 2, 3, "left"), (3, 2, 2, "left"), (2, 2, 2, "top")]
-        path = [(3, 0, 0, "top"), (1, 0, 0, "top"), (4, 0, 0, "top"),(2, 1, 0, "top"), (5, 0, 0, "top"), (1, 1, 0, "top"), (0, 2, 0, "top")]
+        # path = [(3, 0, 0, "top"), (1, 0, 0, "top"), (4, 0, 0, "top"),(2, 1, 0, "top"), (5, 0, 0, "top"), (1, 1, 0, "top"), (0, 2, 0, "top")]
+        # path = [(2, 0, 0, "top"), (1, 1, 0, "top"), (3, 1, 1, "top"), (2, 1, 0, "top"), (4, 1, 2, "top"), (3, 1, 1, "top"), (5, 1, 3, "top"), (4, 1, 2, "top"), (3, 2, 3, "top"), (5, 2, 3, "top")]
+        path = [(2, 0, 0, "top"), (1, 1, 0, "top"), (4, 1, 2, "top"), (3, 1, 1, "top"), (5, 1, 3, "top"), (4, 1, 2, "top"), (3, 2, 3, "top"), (5, 2, 3, "top")]
     armReach = [2.38, 1.58]
 
     if use_face_star:

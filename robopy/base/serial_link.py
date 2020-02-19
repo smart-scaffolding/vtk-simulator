@@ -92,7 +92,7 @@ class SerialLink:
         else:
             self.serial = None
 
-        self.DEBUG = True
+        self.DEBUG = False
         # Robot state variables
         self.AEE_POSE = None
         self.DEE_POSE = None
