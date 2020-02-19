@@ -8,11 +8,22 @@ from robopy.base.common import create_point_from_homogeneous_transform, flip_bas
 from robopy.base.graphics import AnimationUpdate
 import time
 
+# Comms
+import zmq
+import zlib
+import pickle
+from robopy.base.messages import *
+
+context = zmq.Context()
+socket = context.socket(zmq.PUB)
+socket.connect("tcp://127.0.0.1:5559")
+TOPIC = b"ROBOT_1"
+
 accuracy = 1e-7
 threshold = 1
 # num_way_points = 2
 use_face_star = False
-num_steps = 10
+num_steps = 50
 
 # Serial variables
 USE_SERIAL = False
@@ -61,7 +72,7 @@ def main():
     # endFace= BlockFace(3, 2, 5, "left")
     endFace = BlockFace(1, 0, 0, 'top')
 
-    ik_motion, path, directions, animation_update = follow_path(robot, num_steps, offset=1,
+    ik_motion, path, directions, animation_update = follow_path(robot, num_steps, offset=1.25,
                                                                          startFace=startFace,
                                                                     endFace=endFace, blueprint=blueprint,
                                                                                 )
@@ -106,6 +117,7 @@ def move_to_point(direction, point, robot, num_steps, baseID, previous_angles=No
     forward_2 = []
     forward_3 = []
     forward_4 = []
+    base = robot.AEE_POSE
 
     for point in setPoints:
         try:
@@ -119,6 +131,7 @@ def move_to_point(direction, point, robot, num_steps, baseID, previous_angles=No
             # Temporary fix for base flipping
             if baseID == 'D':
                 ik_angles[0] = ik_angles[0] - 180
+                base = robot.DEE_POSE
 
             forward_1.append(ik_angles[0])
             forward_2.append(ik_angles[1])
@@ -151,9 +164,11 @@ def move_to_point(direction, point, robot, num_steps, baseID, previous_angles=No
         #     ik_test = np.concatenate((forward_1, forward_4, forward_3, forward_2), axis=1)
         # angle_update = ik_angles[-1].flatten().tolist()[0]
         angle_update = ik_angles
-        print(f'angle_update {angle_update}')
+        # print(f'angle_update {angle_update}')
         # angle_update = ik_angles
         robot.update_angles(angle_update, unit="deg")
+        print(f'angles: {ik_angles}')
+        send_to_simulator(base=base, trajectory=ik_angles)
 
     forward_1 = np.asmatrix(forward_1)
     forward_2 = np.asmatrix(forward_2)
@@ -166,7 +181,6 @@ def move_to_point(direction, point, robot, num_steps, baseID, previous_angles=No
     # print(f'forward_4 {forward_4}')
 
     ik_angles = np.concatenate((forward_1, forward_2, forward_3, forward_4), axis=0)
-    print(f'ik_angles {ik_angles}')
     return ik_angles.T
 
 def map_angles_from_robot_to_simulation(angles):
@@ -195,8 +209,8 @@ def follow_path(robot, num_steps, offset, startFace, endFace, blueprint, secondP
         # path = [(1, 2, 0, "top"), (0, 2, 0, "top"), (3, 2, 3, "left"), (3, 2, 2, "left"), (3, 2, 5, "left"), (3, 2, 4,"left"), (3, 2, 6, "left"), (3, 2, 5, "left") ]
         # path = [(1, 2, 0, "top"), (0, 2, 0, "top"), (3, 2, 3, "left"), (3, 2, 2, "left"), (2, 2, 2, "top")]
         # path = [(3, 0, 0, "top"), (1, 0, 0, "top"), (4, 0, 0, "top"),(2, 1, 0, "top"), (5, 0, 0, "top"), (1, 1, 0, "top"), (0, 2, 0, "top")]
-        # path = [(2, 0, 0, "top"), (1, 1, 0, "top"), (3, 1, 1, "top"), (2, 1, 0, "top"), (4, 1, 2, "top"), (3, 1, 1, "top"), (5, 1, 3, "top"), (4, 1, 2, "top"), (3, 2, 3, "top"), (5, 2, 3, "top")]
-        path = [(2, 0, 0, "top"), (1, 1, 0, "top"), (4, 1, 2, "top"), (3, 1, 1, "top"), (5, 1, 3, "top"), (4, 1, 2, "top"), (3, 2, 3, "top"), (5, 2, 3, "top")]
+        path = [(2, 0, 0, "top"), (1, 1, 0, "top"), (3, 1, 1, "top"), (2, 1, 0, "top"), (4, 1, 2, "top"), (3, 1, 1, "top"), (5, 1, 3, "top"), (4, 1, 2, "top"), (3, 2, 3, "top"), (5, 2, 3, "top")]
+        # path = [(2, 0, 0, "top"), (1, 1, 0, "top"), (4, 1, 2, "top"), (3, 1, 1, "top"), (5, 1, 3, "top"), (4, 1, 2, "top"), (3, 2, 3, "top"), (5, 2, 3, "top")]
     armReach = [2.38, 1.58]
 
     if use_face_star:
@@ -371,7 +385,7 @@ def add_offset(ee_pos, direction, offset, previous_direction=None, index=None, t
 
     if direction == "top" or previous_direction == "top":
         if type == "ee_up":
-            ee_pos[2] = float(ee_pos[2]) + (offset*0.5)
+            ee_pos[2] = float(ee_pos[2]) + (offset)
         else:
             ee_pos[2] = float(ee_pos[2]) + offset
 
@@ -410,6 +424,14 @@ def add_offset(ee_pos, direction, offset, previous_direction=None, index=None, t
 
     return ee_pos
 
+
+def send_to_simulator(base, trajectory, topic=TOPIC):
+    messagedata = AnimationUpdateMessage(robot_base=base, trajectory=trajectory)
+    message_obj = MessageWrapper(topic=topic, message=messagedata)
+    p = pickle.dumps(message_obj, protocol=-1)
+    z = zlib.compress(p)
+    print(f"{topic} {z}")
+    socket.send_multipart([topic, z])
 
 
 if __name__ == '__main__':

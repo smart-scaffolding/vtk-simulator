@@ -875,12 +875,13 @@ class SerialLink:
                                                                                                      0]-1)) or k ==(
                                 len(self.blueprint[0][0]-1)):
                             color_index = 1
-                        if color_index == 1:
-                            color = vtk_named_colors(["DarkGreen"])
-                        elif color_index == 2:
-                            color = vtk_named_colors(["Red"])
-                        else:
-                            color = vtk_named_colors(["LightGreen"])
+                        # if color_index == 1:
+                        #     color = vtk_named_colors(["DarkGreen"])
+                        # elif color_index == 2:
+                        #     color = vtk_named_colors(["Red"])
+                        # else:
+                        #     color = vtk_named_colors(["LightGreen"])
+                        color = vtk_named_colors(["DarkGreen"])
 
                         actor_list.GetProperty().SetColor(color[0])  # (R,G,B)
                         actor_list.SetScale(0.013)
