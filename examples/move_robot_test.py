@@ -13,8 +13,8 @@ threshold = 1
 use_face_star = False
 animate = False
 move_both_end_effectors=True
-delay = 0.1
-num_steps = 30 #old: 7
+delay = 0.5
+num_steps = 5   #old: 7
 use_serial = True
 
 
@@ -109,30 +109,30 @@ def main():
         if index % (num_steps*3) == 0:
             print("\n THIRD STEP REACHED")
             flip_angles = True if flip_angles == False else False
-            if use_serial:
-                if first_serial_message:
-                    if flip_angles:
-                        robot.send_to_robot(angle, delay=delay, gripper_control="21")
-                    else:
-                        robot.send_to_robot(angle, delay=delay, gripper_control="11")
-
-                    first_serial_message = False
-                    time.sleep(2)
-
-                if flip_angles:
-                    time.sleep(2)
-                    robot.send_to_robot(angle, delay=delay, gripper_control="21")
-                    robot.send_to_robot(angle, delay=delay, gripper_control="21")
-                    time.sleep(1)
-                    robot.send_to_robot(angle, delay=delay, gripper_control="12")
-                    time.sleep(35)
-                else:
-                    time.sleep(2)
-                    robot.send_to_robot(angle, delay=delay, gripper_control="11")
-                    robot.send_to_robot(angle, delay=delay, gripper_control="11")
-                    time.sleep(1)
-                    robot.send_to_robot(angle, delay=delay, gripper_control="22")
-                    time.sleep(35)
+            # if use_serial:
+                # if first_serial_message:
+                #     if flip_angles:
+                #         robot.send_to_robot(angle, delay=delay, gripper_control="21")
+                #     else:
+                #         robot.send_to_robot(angle, delay=delay, gripper_control="11")
+                #
+                #     first_serial_message = False
+                #     time.sleep(2)
+                #
+                # if flip_angles:
+                #     time.sleep(2)
+                #     robot.send_to_robot(angle, delay=delay, gripper_control="21")
+                #     robot.send_to_robot(angle, delay=delay, gripper_control="21")
+                #     time.sleep(1)
+                #     robot.send_to_robot(angle, delay=delay, gripper_control="12")
+                #     time.sleep(35)
+                # else:
+                #     time.sleep(2)
+                #     robot.send_to_robot(angle, delay=delay, gripper_control="11")
+                #     robot.send_to_robot(angle, delay=delay, gripper_control="11")
+                #     time.sleep(1)
+                #     robot.send_to_robot(angle, delay=delay, gripper_control="22")
+                #     time.sleep(35)
             print("\n\nIndex: {}  New Flipping Angle: {}".format(index, flip_angles))
 
         if flip_angles:
